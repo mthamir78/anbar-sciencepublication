@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>College of Science — Faculty Publications Dashboard</title>
+  <style>
+    :root{ --bg:#0f172a; --card:#0b1224; --ink:#e5e7eb; --muted:#a5b4fc; --brand:#0ea5a4; --brand2:#2563eb; --line:#1f2a44; }
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,var(--bg),#0b1329);color:var(--ink);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial}
+    header{position:sticky;top:0;z-index:10;background:#0c1226cc;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+    .wrap{max-width:1300px;margin:0 auto;padding:16px} h1{font-size:22px;margin:0 0 6px} .subtitle{color:var(--muted);font-size:13px}
+    main{max-width:1300px;margin:18px auto;padding:0 16px 90px} .grid{display:grid;grid-template-columns:1.1fr 2fr;gap:18px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 10px 30px #0006}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center} input[type="file"]{display:none}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid #223056;background:#0e1831;color:var(--ink);cursor:pointer}
+    .btn.primary{background:linear-gradient(180deg,var(--brand2),#1e40af);border-color:#1e3a8a} .btn.success{background:linear-gradient(180deg,var(--brand),#0b766e)}
+    .filters{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
+    select,input[type="text"]{width:100%;padding:10px;border-radius:10px;border:1px solid #2a3560;background:#0f1733;color:var(--ink)}
+    table{width:100%;border-collapse:separate;border-spacing:0 8px} th,td{text-align:left;padding:10px 12px} th{font-weight:600;color:#dbeafe;border-bottom:1px solid #22305e}
+    tr{background:#0e1530;border:1px solid #1d274f} tr td:first-child, tr th:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px} tr td:last-child, tr th:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+    .pill{padding:4px 8px;border-radius:999px;background:#0d1a3a;border:1px solid #26356b;color:#cfe1ff;font-size:12px} .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media (max-width:1100px){.grid{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr 1fr}.two{grid-template-columns:1fr}} .rtl{direction:rtl}
+    footer{max-width:1300px;margin:18px auto;padding:0 16px}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="wrap row" style="justify-content:space-between;gap:12px">
+      <div>
+        <h1 data-i18n="title">Faculty Publications Dashboard</h1>
+        <div class="subtitle" data-i18n="subtitle">Weekly-refreshed publications (OpenAlex + CSV merge). Fully client-side viewer.</div>
+      </div>
+      <div class="row">
+        <button class="btn" id="toggleLang">العربية</button>
+        <span class="pill" id="lastUpdated">—</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <section class="card">
+        <h2>Explore & filter</h2>
+        <div class="filters">
+          <input type="text" id="search" placeholder="Search faculty by name…" />
+          <select id="deptFilter"><option value="">All departments</option></select>
+          <select id="degreeFilter"><option value="">All degrees</option></select>
+          <select id="positionFilter"><option value="">All positions</option></select>
+          <button class="btn" id="exportCsv">⬇ Export summary CSV</button>
+        </div>
+        <div style="height:12px"></div>
+        <div class="two">
+          <div class="card" style="padding:10px">
+            <h3 style="margin:4px 0">Department summary</h3>
+            <canvas id="deptBar"></canvas>
+          </div>
+          <div class="card" style="padding:10px">
+            <h3 style="margin:4px 0">Publications per year (indexed vs other)</h3>
+            <canvas id="yearLine"></canvas>
+          </div>
+        </div>
+        <div style="height:12px"></div>
+        <div class="row">
+          <div class="pill">Faculty: <b id="statFaculty">0</b></div>
+          <div class="pill">Indexed: <b id="statIndexed">0</b></div>
+          <div class="pill">Other: <b id="statOther">0</b></div>
+        </div>
+        <div style="height:12px"></div>
+        <table id="tbl"><thead><tr>
+          <th>#</th><th>Faculty</th><th>Dept</th><th>Degree</th><th>Position</th>
+          <th>Scopus ID</th><th>Clarivate ID</th><th>Indexed pubs</th><th>Other pubs</th><th>Details</th>
+        </tr></thead><tbody id="tbody"></tbody></table>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="card" style="padding:12px">© <span id="yearNow"></span> • Designed by Dr. Thamer Y. Mutter</div>
+  </footer>
+
+  <script>
+    const FEED_URL = 'https://script.google.com/macros/s/AKfycbyZ3riOiv1mIPpjNxsbcV34qvBCXevjAcLcckonpCxARI6KuEVUw8J9OkhJjbp5rruU/exec'; // <-- paste your /exec URL here
+
+    const I18N = {
+      en:{title:'Faculty Publications Dashboard', subtitle:'Weekly-refreshed publications (OpenAlex + CSV merge). Fully client-side viewer.'},
+      ar:{title:'لوحة منشورات التدريسيين', subtitle:'تحديث أسبوعي (OpenAlex + CSV) — عارض يعمل على المتصفح.'}
+    };
+    let CUR_LANG='en';
+    const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+    const state={ faculty:[], computed:[], charts:{} };
+    const norm=s=>(s||'').toString().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+    const unique=a=>Array.from(new Set(a.filter(Boolean)));
+
+    function applyI18N(){
+      document.body.classList.toggle('rtl', CUR_LANG==='ar');
+      const t=I18N[CUR_LANG];
+      document.querySelector('[data-i18n="title"]').textContent=t.title;
+      document.querySelector('[data-i18n="subtitle"]').textContent=t.subtitle;
+      document.getElementById('toggleLang').textContent = CUR_LANG==='ar'?'English':'العربية';
+    }
+
+    async function tryLoadFeed(){
+      try{ const r=await fetch(FEED_URL+'?cb='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(r.status);
+        return await r.json();
+      }catch(e){ alert('Feed not found. Check FEED_URL.'); return null; }
+    }
+    function populateFilters(){
+      const depts=unique(state.faculty.map(f=>f.department)).sort();
+      const degs=unique(state.faculty.map(f=>f.degree)).sort();
+      const poss=unique(state.faculty.map(f=>f.position)).sort();
+      const fill=(sel,arr,lab)=>{ const el=$(sel); el.innerHTML=`<option value="">${lab}</option>`+arr.map(v=>`<option>${v}</option>`).join(''); };
+      fill('#deptFilter',depts,'All departments'); fill('#degreeFilter',degs,'All degrees'); fill('#positionFilter',poss,'All positions');
+    }
+    function renderTable(){
+      const q=norm($('#search').value);
+      const dept=$('#deptFilter').value, deg=$('#degreeFilter').value, pos=$('#positionFilter').value;
+      const tb=$('#tbody'); tb.innerHTML=''; let i=0;
+      for(const rec of state.computed){
+        const f=rec.fac;
+        if(q && ![...(f.english_names||[]), f.arabic_name||''].some(n=>norm(n).includes(q))) continue;
+        if(dept&&f.department!==dept) continue; if(deg&&f.degree!==deg) continue; if(pos&&f.position!==pos) continue;
+        i++;
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${i}</td><td><b>${(f.english_names&&f.english_names[0])||'—'}</b><div class="subtitle">${f.arabic_name||''}</div></td><td>${f.department||'—'}</td><td>${f.degree||'—'}</td><td>${f.position||'—'}</td><td>${f.scopus_id||'—'}</td><td>${f.clarivate_id||'—'}</td><td><b>${rec.counts.indexed}</b></td><td>${rec.counts.other}</td><td><button class="btn" data-idx="${rec.idx}">View</button></td>`;
+        tb.appendChild(tr);
+      }
+      $$('button[data-idx]').forEach(b=>b.addEventListener('click',()=>alert('Open details view added earlier; can be re-inserted if you want.')));
+    }
+    function buildCharts(){
+      const deptMap=new Map();
+      for(const r of state.computed){
+        const d=r.fac.department||'—';
+        if(!deptMap.has(d)) deptMap.set(d,{indexed:0,other:0});
+        deptMap.get(d).indexed+=r.counts.indexed; deptMap.get(d).other+=r.counts.other;
+      }
+      const labels=[...deptMap.keys()], idx=labels.map(l=>deptMap.get(l).indexed), oth=labels.map(l=>deptMap.get(l).other);
+      state.charts.deptBar?.destroy(); state.charts.deptBar=new Chart($('#deptBar'),{type:'bar',data:{labels,datasets:[{label:'Indexed',data:idx},{label:'Other',data:oth}]}});
+
+      const yearAgg=new Map();
+      for(const r of state.computed){ for(const [y,c] of r.byYear){ const o=yearAgg.get(y)||{indexed:0,other:0}; o.indexed+=c.indexed; o.other+=c.other; yearAgg.set(y,o);} }
+      const ys=[...yearAgg.keys()].sort(); const yI=ys.map(y=>yearAgg.get(y).indexed), yO=ys.map(y=>yearAgg.get(y).other);
+      state.charts.yearLine?.destroy(); state.charts.yearLine=new Chart($('#yearLine'),{type:'line',data:{labels:ys,datasets:[{label:'Indexed',data:yI},{label:'Other',data:yO}]}})
+    }
+    function updateStats(){
+      $('#statFaculty').textContent=state.faculty.length;
+      $('#statIndexed').textContent=state.computed.reduce((s,r)=>s+r.counts.indexed,0);
+      $('#statOther').textContent=state.computed.reduce((s,r)=>s+r.counts.other,0);
+    }
+    (async function init(){
+      $('#yearNow').textContent=new Date().getFullYear(); applyI18N();
+      $('#toggleLang').addEventListener('click',()=>{ CUR_LANG=(CUR_LANG==='en'?'ar':'en'); applyI18N(); });
+      const feed=await tryLoadFeed(); if(!feed) return;
+      state.faculty=feed.faculty||[]; state.computed=feed.computed||[];
+      populateFilters(); renderTable(); buildCharts(); updateStats();
+      $('#lastUpdated').textContent = feed.generated_at ? ('Updated: '+ new Date(feed.generated_at).toLocaleString()) : 'Updated: now';
+    })();
+  </script>
+</body>
+</html>
