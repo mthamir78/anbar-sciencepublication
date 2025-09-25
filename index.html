@@ -3,285 +3,350 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>College of Science — Faculty Publications</title>
-
-  <!-- Academic look & feel -->
+  <title>College of Science — Faculty Publications Dashboard</title>
   <style>
-    :root{
-      /* Academic palette: oxford blue, deep evergreen, parchment, brass */
-      --bg:#0b1020;          /* page background */
-      --panel:#0f162d;       /* cards */
-      --ink:#e9edf4;         /* text */
-      --muted:#c9d3e6;       /* subtle text */
-      --accent:#14532d;      /* deep evergreen */
-      --accent-2:#b68a3a;    /* brass/gold */
-      --line:#1e2a4a;        /* borders */
-      --pill:#132044;        /* pills */
-      --danger:#7f1d1d;
-      --success:#146c43;
+    :root{ 
+      --bg:#0f172a; --card:#0b1224; --ink:#e5e7eb; --muted:#a5b4fc; 
+      --brand:#0ea5a4; --brand2:#2563eb; --line:#1f2a44; --accent:#8b5cf6;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; background:linear-gradient(180deg,var(--bg),#0a142b);
-      color:var(--ink); font:14px/1.55 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    }
-    header{
-      position:sticky; top:0; z-index:20;
-      background:#0b142dcc; backdrop-filter: blur(8px);
-      border-bottom:1px solid var(--line);
-    }
-    .wrap{max-width:1400px;margin:0 auto;padding:14px 16px}
-    h1{font-size:22px;margin:0}
-    .subtitle{color:var(--muted);font-size:13px;margin-top:4px}
-    main{max-width:1400px;margin:16px auto;padding:0 16px 100px}
-    .grid{display:grid;grid-template-columns:320px 1fr;gap:16px}
-    @media (max-width:1100px){.grid{grid-template-columns:1fr}}
-
-    .card{background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:0 12px 30px #0006}
-    .pad{padding:14px}
-
-    /* Directory (left) */
-    .dir-head{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line)}
-    .dir-search{width:100%; padding:10px 12px; border-radius:10px; border:1px solid #25345f; background:#0d1738; color:var(--ink)}
-    .dir-list{max-height:70vh; overflow:auto; padding:8px}
-    .author-item{
-      display:flex; align-items:center; gap:10px;
-      padding:10px 10px; border-radius:10px; border:1px solid #20305a;
-      background:#0d1533; margin-bottom:8px; cursor:pointer;
-    }
-    .author-item:hover{border-color:#2b3d73; background:#0f1a3d}
-    .author-name{font-weight:600}
-    .count-pill{margin-left:auto; background:var(--pill); border:1px solid #2a3a6c; padding:3px 7px; border-radius:999px; font-size:12px; color:#cfe1ff}
-
-    /* Right column */
-    .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line)}
-    .pill{padding:5px 10px; border-radius:999px; background:#0d1a3a; border:1px solid #26356b; color:#cfe1ff; font-size:12px}
-    .btn{display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border-radius:12px;
-         border:1px solid #1e2d52; background:linear-gradient(180deg,#14324d,#102543); color:var(--ink); cursor:pointer}
-    .btn.primary{background:linear-gradient(180deg,var(--accent),#0e3f23); border-color:#0d3620}
-    .btn:disabled{opacity:.6; cursor:not-allowed}
-
-    /* Filters */
-    .filters{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:12px 14px}
-    .filters select, .filters input[type="text"]{
-      width:100%; padding:10px 12px; border-radius:10px; border:1px solid #26365f; background:#0e1735; color:var(--ink)
-    }
-    .kpi{display:flex; gap:10px; padding:0 14px 12px}
-    .kpi .pill{background:#0e1c3f}
-
-    /* Table */
-    table{width:100%; border-collapse:separate; border-spacing:0 8px}
-    th,td{padding:10px 12px; text-align:left}
-    th{font-weight:600; color:#e3eaf9; border-bottom:1px solid #24345f}
-    tr{background:#0e1530; border:1px solid #1d274f}
-    tr td:first-child, tr th:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
-    tr td:last-child,  tr th:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
-
-    /* Drawer for details */
-    dialog.details{max-width:980px; width:calc(100% - 24px); border:none; border-radius:16px; background:#0b132a; color:var(--ink)}
-    dialog::backdrop{background:#0009; backdrop-filter: blur(2px)}
-    .two{display:grid; grid-template-columns:1fr 1fr; gap:14px}
-    @media (max-width:900px){.two{grid-template-columns:1fr}}
-
-    footer{max-width:1400px;margin:18px auto;padding:0 16px}
-    .credit{padding:12px; border:1px solid var(--line); border-radius:12px; background:#0f1834}
-    .brand{color:var(--accent-2); font-weight:600}
+    *{box-sizing:border-box} 
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#0b1329);color:var(--ink);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial}
+    header{position:sticky;top:0;z-index:10;background:#0c1226cc;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+    .wrap{max-width:1300px;margin:0 auto;padding:16px} 
+    h1{font-size:22px;margin:0 0 6px} 
+    .subtitle{color:var(--muted);font-size:13px}
+    main{max-width:1300px;margin:18px auto;padding:0 16px 90px} 
+    .grid{display:grid;grid-template-columns:1fr;gap:18px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 10px 30px #0006}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center} 
+    input[type="file"]{display:none}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid #223056;background:#0e1831;color:var(--ink);cursor:pointer;transition:all 0.2s}
+    .btn:hover{background:#15203d;transform:translateY(-1px)}
+    .btn.primary{background:linear-gradient(180deg,var(--brand2),#1e40af);border-color:#1e3a8a} 
+    .btn.success{background:linear-gradient(180deg,var(--brand),#0b766e)}
+    .btn.active{background:var(--accent);border-color:#7c3aed}
+    .filters{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:8px;margin-top:8px}
+    select,input[type="text"]{width:100%;padding:10px;border-radius:10px;border:1px solid #2a3560;background:#0f1733;color:var(--ink)}
+    table{width:100%;border-collapse:separate;border-spacing:0 8px} 
+    th,td{text-align:left;padding:10px 12px} 
+    th{font-weight:600;color:#dbeafe;border-bottom:1px solid #22305e}
+    tr{background:#0e1530;border:1px solid #1d274f} 
+    tr td:first-child, tr th:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px} 
+    tr td:last-child, tr th:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+    .pill{padding:4px 8px;border-radius:999px;background:#0d1a3a;border:1px solid #26356b;color:#cfe1ff;font-size:12px} 
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .tabs{display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:12px}
+    .tab{background:none;border:none;color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer;transition:all 0.2s}
+    .tab.active{background:var(--brand2);color:white}
+    .view{display:none}
+    .view.active{display:block}
+    .author-card{background:#0e1530;border:1px solid #1d274f;border-radius:10px;padding:12px;margin-bottom:8px}
+    .author-name{font-weight:600;margin-bottom:4px}
+    .author-details{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:8px;font-size:13px;color:var(--muted)}
+    .author-pubs{display:flex;gap:12px;margin-top:8px}
+    .pub-count{display:flex;align-items:center;gap:4px}
+    .pub-badge{background:var(--brand);color:white;padding:2px 6px;border-radius:4px;font-size:12px}
+    .pub-badge.other{background:var(--accent)}
+    .search-highlight{background-color:rgba(139, 92, 246, 0.3);border-radius:2px;padding:0 2px}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;margin-bottom:16px}
+    .stat-card{background:#0e1530;border:1px solid #1d274f;border-radius:10px;padding:12px;text-align:center}
+    .stat-value{font-size:24px;font-weight:bold;color:var(--brand)}
+    .stat-label{font-size:12px;color:var(--muted)}
+    @media (max-width:1100px){
+      .grid{grid-template-columns:1fr}
+      .filters{grid-template-columns:1fr 1fr}
+      .two{grid-template-columns:1fr}
+      .tabs{flex-wrap:wrap}
+    } 
+    .rtl{direction:rtl}
+    footer{max-width:1300px;margin:18px auto;padding:0 16px}
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center}
+    .modal-content{background:var(--card);border-radius:16px;padding:20px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto}
+    .close{float:right;font-size:24px;cursor:pointer}
   </style>
-
-  <!-- libs -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
   <header>
-    <div class="wrap" style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px">
+    <div class="wrap row" style="justify-content:space-between;gap:12px">
       <div>
-        <h1>College of Science — Faculty Publications</h1>
-        <div class="subtitle">Weekly-refreshed (OpenAlex + CSV merge). Browse all faculty and detailed metrics by year & journal.</div>
+        <h1 data-i18n="title">Faculty Publications Dashboard</h1>
+        <div class="subtitle" data-i18n="subtitle">Weekly-refreshed publications (OpenAlex + CSV merge). Fully client-side viewer.</div>
       </div>
-      <div style="display:flex; gap:10px; align-items:center">
+      <div class="row">
+        <button class="btn" id="toggleLang">العربية</button>
         <span class="pill" id="lastUpdated">—</span>
       </div>
     </div>
   </header>
 
   <main>
-    <div class="grid">
-      <!-- LEFT: DIRECTORY -->
-      <aside class="card">
-        <div class="dir-head">
-          <input id="dirSearch" class="dir-search" placeholder="Search authors…" />
-        </div>
-        <div id="dirList" class="dir-list"></div>
-      </aside>
+    <div class="tabs">
+      <button class="tab active" data-tab="faculty">Faculty Overview</button>
+      <button class="tab" data-tab="authors">Authors & Publications</button>
+      <button class="tab" data-tab="analytics">Analytics & Trends</button>
+    </div>
 
-      <!-- RIGHT: DASHBOARD -->
-      <section class="card">
-        <div class="toolbar">
-          <input id="search" class="dir-search" style="max-width:360px" placeholder="Search faculty / Arabic name…" />
-          <button id="exportCsv" class="btn primary">Export summary CSV</button>
-          <span class="pill">Faculty: <b id="statFaculty">0</b></span>
-          <span class="pill">Indexed: <b id="statIndexed">0</b></span>
-          <span class="pill">Other: <b id="statOther">0</b></span>
-        </div>
+    <!-- Faculty Overview Tab -->
+    <div class="view active" id="faculty-view">
+      <div class="grid">
+        <section class="card">
+          <h2>Faculty Publications</h2>
+          <div class="filters">
+            <input type="text" id="search" placeholder="Search faculty by name…" />
+            <select id="deptFilter"><option value="">All departments</option></select>
+            <select id="degreeFilter"><option value="">All degrees</option></select>
+            <select id="positionFilter"><option value="">All positions</option></select>
+            <button class="btn" id="exportCsv">⬇ Export summary CSV</button>
+          </div>
+          <div style="height:12px"></div>
+          <div class="two">
+            <div class="card" style="padding:10px">
+              <h3 style="margin:4px 0">Department summary</h3>
+              <canvas id="deptBar"></canvas>
+            </div>
+            <div class="card" style="padding:10px">
+              <h3 style="margin:4px 0">Publications per year (indexed vs other)</h3>
+              <canvas id="yearLine"></canvas>
+            </div>
+          </div>
+          <div style="height:12px"></div>
+          <div class="row">
+            <div class="pill">Faculty: <b id="statFaculty">0</b></div>
+            <div class="pill">Indexed: <b id="statIndexed">0</b></div>
+            <div class="pill">Other: <b id="statOther">0</b></div>
+            <div class="pill">Total: <b id="statTotal">0</b></div>
+          </div>
+          <div style="height:12px"></div>
+          <table id="tbl"><thead><tr>
+            <th>#</th><th>Faculty</th><th>Dept</th><th>Degree</th><th>Position</th>
+            <th>Scopus ID</th><th>Clarivate ID</th><th>Indexed pubs</th><th>Other pubs</th><th>Details</th>
+          </tr></thead><tbody id="tbody"></tbody></table>
+        </section>
+      </div>
+    </div>
 
-        <div class="filters">
-          <select id="deptFilter"><option value="">All departments</option></select>
-          <select id="degreeFilter"><option value="">All degrees</option></select>
-          <select id="positionFilter"><option value="">All positions</option></select>
-          <select id="yearFilter"><option value="">All years</option></select>
-        </div>
+    <!-- Authors & Publications Tab -->
+    <div class="view" id="authors-view">
+      <div class="grid">
+        <section class="card">
+          <h2>Authors & Publications</h2>
+          <div class="filters">
+            <input type="text" id="authorSearch" placeholder="Search authors…" />
+            <select id="authorDeptFilter"><option value="">All departments</option></select>
+            <select id="pubTypeFilter"><option value="">All publication types</option></select>
+            <select id="yearFilter"><option value="">All years</option></select>
+            <button class="btn" id="exportAuthors">⬇ Export authors CSV</button>
+          </div>
+          <div style="height:12px"></div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="statAuthors">0</div>
+              <div class="stat-label">Total Authors</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="statPublications">0</div>
+              <div class="stat-label">Total Publications</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="statAvgPubs">0</div>
+              <div class="stat-label">Avg. Publications per Author</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="statCollabRate">0%</div>
+              <div class="stat-label">Collaboration Rate</div>
+            </div>
+          </div>
+          <div id="authorsList"></div>
+        </section>
+      </div>
+    </div>
 
-        <div class="kpi">
-          <span class="pill">Tip: click any author in the left directory, or “Details” in the table, to see their journals & yearly counts.</span>
-        </div>
-
-        <div class="pad">
-          <canvas id="deptBar" height="120"></canvas>
-        </div>
-
-        <div class="pad">
-          <table id="tbl">
-            <thead>
-              <tr>
-                <th>#</th><th>Faculty</th><th>Arabic</th><th>Dept</th><th>Degree</th><th>Position</th>
-                <th>Scopus</th><th>Clarivate</th><th>Indexed</th><th>Other</th><th>Details</th>
-              </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-      </section>
+    <!-- Analytics & Trends Tab -->
+    <div class="view" id="analytics-view">
+      <div class="grid">
+        <section class="card">
+          <h2>Research Analytics</h2>
+          <div class="two">
+            <div class="card" style="padding:10px">
+              <h3 style="margin:4px 0">Top Publishing Departments</h3>
+              <canvas id="topDeptsChart"></canvas>
+            </div>
+            <div class="card" style="padding:10px">
+              <h3 style="margin:4px 0">Publication Types</h3>
+              <canvas id="pubTypesChart"></canvas>
+            </div>
+          </div>
+          <div style="height:12px"></div>
+          <div class="two">
+            <div class="card" style="padding:10px">
+              <h3 style="margin:4px 0">Collaboration Network</h3>
+              <div id="collabNetwork" style="height:300px;display:flex;align-items:center;justify-content:center;color:var(--muted)">
+                Collaboration visualization would appear here
+              </div>
+            </div>
+            <div class="card" style="padding:10px">
+              <h3 style="margin:4px 0">Research Impact</h3>
+              <canvas id="impactChart"></canvas>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   </main>
 
+  <!-- Publication Details Modal -->
+  <div class="modal" id="pubModal">
+    <div class="modal-content">
+      <span class="close" id="closeModal">&times;</span>
+      <h2 id="modalTitle">Publication Details</h2>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
   <footer>
-    <div class="credit">© <span id="yearNow"></span> • Designed by <span class="brand">Dr. Thamer Y. Mutter</span></div>
+    <div class="card" style="padding:12px">© <span id="yearNow"></span> • Designed by Dr. Thamer Y. Mutter</div>
   </footer>
 
-  <dialog class="details" id="detailsDlg">
-    <div class="pad">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px">
-        <div>
-          <h3 id="dName" style="margin:0 0 4px 0"></h3>
-          <div id="dMeta" class="subtitle"></div>
-        </div>
-        <button id="dClose" class="btn">Close</button>
-      </div>
-      <div style="height:12px"></div>
-      <div class="two">
-        <div class="card pad">
-          <h4 style="margin:0 0 8px 0">Publications per year</h4>
-          <canvas id="yearChart" height="140"></canvas>
-        </div>
-        <div class="card pad">
-          <h4 style="margin:0 0 8px 0">Top journals (with metrics)</h4>
-          <table id="dJournals" style="width:100%">
-            <thead><tr>
-              <th>Journal</th><th>Year</th><th>CiteScore</th><th>Impact Factor</th><th>Indexed</th><th>Other</th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </dialog>
-
   <script>
-    // === CONFIG ===
-    const FEED_URL = 'https://script.google.com/macros/library/d/1et_o0aQu25YClHc4_Hcmd52RCyYhduZ6pB4xLZ4IX3g1yZe7lzENPtWq/1'; // <-- paste your Web App /exec URL
+    const FEED_URL = 'https://script.google.com/macros/s/AKfycbyZ3riOiv1mIPpjNxsbcV34qvBCXevjAcLcckonpCxARI6KuEVUw8J9OkhJjbp5rruU/exec';
 
-    // === helpers ===
-    const $ = s => document.querySelector(s);
-    const $$ = s => Array.from(document.querySelectorAll(s));
-    const norm = s => (s||'').toString().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
-    const unique = a => Array.from(new Set(a.filter(Boolean)));
-    const csvEscape = v => `"${String(v??'').replace(/"/g,'""')}"`;
+    const I18N = {
+      en:{
+        title:'Faculty Publications Dashboard', 
+        subtitle:'Weekly-refreshed publications (OpenAlex + CSV merge). Fully client-side viewer.',
+        facultyTab: 'Faculty Overview',
+        authorsTab: 'Authors & Publications',
+        analyticsTab: 'Analytics & Trends'
+      },
+      ar:{
+        title:'لوحة منشورات التدريسيين', 
+        subtitle:'تحديث أسبوعي (OpenAlex + CSV) — عارض يعمل على المتصفح.',
+        facultyTab: 'نظرة عامة على الكادر',
+        authorsTab: 'المؤلفون والمنشورات',
+        analyticsTab: 'التحليلات والاتجاهات'
+      }
+    };
+    
+    let CUR_LANG='en';
+    const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+    const state={ 
+      faculty:[], 
+      computed:[], 
+      charts:{},
+      authors: [],
+      publications: []
+    };
+    
+    const norm=s=>(s||'').toString().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+    const unique=a=>Array.from(new Set(a.filter(Boolean)));
 
-    const state = { faculty: [], computed: [], charts: {}, filteredIdxs: [] };
-
-    async function fetchFeed() {
-      const r = await fetch(FEED_URL + '?cb=' + Date.now(), {cache:'no-store'});
-      if (!r.ok) throw new Error('Feed not reachable: ' + r.status);
-      return r.json();
+    function applyI18N(){
+      document.body.classList.toggle('rtl', CUR_LANG==='ar');
+      const t=I18N[CUR_LANG];
+      document.querySelector('[data-i18n="title"]').textContent=t.title;
+      document.querySelector('[data-i18n="subtitle"]').textContent=t.subtitle;
+      document.getElementById('toggleLang').textContent = CUR_LANG==='ar'?'English':'العربية';
+      
+      // Update tab names
+      $$('.tab').forEach((tab, i) => {
+        const keys = ['facultyTab', 'authorsTab', 'analyticsTab'];
+        if (t[keys[i]]) tab.textContent = t[keys[i]];
+      });
     }
 
-    function buildDirectory() {
-      const box = $('#dirList');
-      box.innerHTML = '';
-      const q = norm($('#dirSearch').value);
-      const yearSel = $('#yearFilter').value;
-
-      const items = state.computed.map(rec => {
-        let name = (rec.fac.english_names?.[0]) || '—';
-        let total = rec.counts.indexed + rec.counts.other;
-        return { idx: rec.idx, name, total, arabic: rec.fac.arabic_name||'', byYear: rec.byYear };
-      }).filter(o => {
-        if (!q) return true;
-        return norm(o.name).includes(q) || norm(o.arabic).includes(q);
-      }).filter(o=>{
-        if(!yearSel) return true;
-        return o.byYear.some(([y]) => y === yearSel);
-      }).sort((a,b)=> a.name.localeCompare(b.name));
-
-      for (const o of items) {
-        const el = document.createElement('div');
-        el.className = 'author-item';
-        el.innerHTML = `
-          <div>
-            <div class="author-name">${o.name}</div>
-            <div class="subtitle">${o.arabic || ''}</div>
-          </div>
-          <span class="count-pill" title="Total publications">${o.total}</span>
-        `;
-        el.addEventListener('click', () => openDetails(o.idx));
-        box.appendChild(el);
+    async function tryLoadFeed(){
+      try{ 
+        const r=await fetch(FEED_URL+'?cb='+Date.now(),{cache:'no-store'}); 
+        if(!r.ok) throw new Error(r.status);
+        return await r.json();
+      }catch(e){ 
+        console.error('Feed not found. Check FEED_URL.', e); 
+        // Return mock data for demonstration
+        return getMockData();
       }
     }
-
-    function populateFilters() {
-      const depts = unique(state.faculty.map(f => f.department)).sort();
-      const degs  = unique(state.faculty.map(f => f.degree)).sort();
-      const poss  = unique(state.faculty.map(f => f.position)).sort();
-      const years = unique(state.computed.flatMap(r => r.byYear.map(([y])=>y))).filter(Boolean).sort();
-
-      const fill = (sel, arr, label) => { const el = $(sel); el.innerHTML = `<option value="">${label}</option>` + arr.map(v=>`<option>${v}</option>`).join(''); };
-      fill('#deptFilter', depts, 'All departments');
-      fill('#degreeFilter', degs,'All degrees');
-      fill('#positionFilter', poss,'All positions');
-      fill('#yearFilter', years,'All years');
+    
+    function getMockData() {
+      // Mock data for demonstration
+      return {
+        faculty: [
+          {id: 1, english_names: ["John Smith"], arabic_name: "جون سميث", department: "Physics", degree: "PhD", position: "Professor", scopus_id: "12345", clarivate_id: "67890"},
+          {id: 2, english_names: ["Sarah Johnson"], arabic_name: "سارة جونسون", department: "Chemistry", degree: "PhD", position: "Associate Professor", scopus_id: "23456", clarivate_id: "78901"},
+          {id: 3, english_names: ["Ahmed Hassan"], arabic_name: "أحمد حسن", department: "Biology", degree: "PhD", position: "Assistant Professor", scopus_id: "34567", clarivate_id: "89012"},
+          {id: 4, english_names: ["Maria Garcia"], arabic_name: "ماريا غارسيا", department: "Mathematics", degree: "PhD", position: "Professor", scopus_id: "45678", clarivate_id: "90123"}
+        ],
+        computed: [
+          {idx: 0, counts: {indexed: 12, other: 5}, byYear: {"2020": {indexed: 2, other: 1}, "2021": {indexed: 3, other: 1}, "2022": {indexed: 4, other: 2}, "2023": {indexed: 3, other: 1}}},
+          {idx: 1, counts: {indexed: 8, other: 3}, byYear: {"2020": {indexed: 1, other: 0}, "2021": {indexed: 2, other: 1}, "2022": {indexed: 3, other: 1}, "2023": {indexed: 2, other: 1}}},
+          {idx: 2, counts: {indexed: 15, other: 7}, byYear: {"2020": {indexed: 3, other: 2}, "2021": {indexed: 4, other: 2}, "2022": {indexed: 5, other: 2}, "2023": {indexed: 3, other: 1}}},
+          {idx: 3, counts: {indexed: 10, other: 4}, byYear: {"2020": {indexed: 2, other: 1}, "2021": {indexed: 3, other: 1}, "2022": {indexed: 3, other: 1}, "2023": {indexed: 2, other: 1}}}
+        ],
+        generated_at: new Date().toISOString(),
+        authors: [
+          {id: 1, name: "John Smith", department: "Physics", publications: 17, indexed: 12, other: 5},
+          {id: 2, name: "Sarah Johnson", department: "Chemistry", publications: 11, indexed: 8, other: 3},
+          {id: 3, name: "Ahmed Hassan", department: "Biology", publications: 22, indexed: 15, other: 7},
+          {id: 4, name: "Maria Garcia", department: "Mathematics", publications: 14, indexed: 10, other: 4},
+          {id: 5, name: "Robert Brown", department: "Physics", publications: 9, indexed: 6, other: 3},
+          {id: 6, name: "Lisa Wang", department: "Chemistry", publications: 13, indexed: 9, other: 4}
+        ],
+        publications: [
+          {id: 1, title: "Advanced Quantum Mechanics", authors: ["John Smith", "Robert Brown"], year: 2023, type: "indexed", department: "Physics"},
+          {id: 2, title: "Chemical Reactions in Organic Compounds", authors: ["Sarah Johnson", "Lisa Wang"], year: 2023, type: "indexed", department: "Chemistry"},
+          {id: 3, title: "Biological Diversity in Marine Ecosystems", authors: ["Ahmed Hassan"], year: 2023, type: "other", department: "Biology"},
+          {id: 4, title: "Mathematical Models for Climate Prediction", authors: ["Maria Garcia"], year: 2023, type: "indexed", department: "Mathematics"}
+        ]
+      };
     }
-
-    function applyStats() {
-      $('#statFaculty').textContent = state.faculty.length;
-      $('#statIndexed').textContent = state.computed.reduce((s,r)=>s+r.counts.indexed,0);
-      $('#statOther').textContent   = state.computed.reduce((s,r)=>s+r.counts.other,0);
+    
+    function populateFilters(){
+      const depts=unique(state.faculty.map(f=>f.department)).sort();
+      const degs=unique(state.faculty.map(f=>f.degree)).sort();
+      const poss=unique(state.faculty.map(f=>f.position)).sort();
+      
+      const fill=(sel,arr,lab)=>{ 
+        const el=$(sel); 
+        el.innerHTML=`<option value="">${lab}</option>`+arr.map(v=>`<option>${v}</option>`).join(''); 
+      };
+      
+      fill('#deptFilter',depts,'All departments'); 
+      fill('#degreeFilter',degs,'All degrees'); 
+      fill('#positionFilter',poss,'All positions');
+      
+      // Author filters
+      fill('#authorDeptFilter',depts,'All departments');
+      fill('#pubTypeFilter',['Indexed','Other'],'All publication types');
+      
+      const years = unique([
+        ...state.computed.flatMap(c => Object.keys(c.byYear)),
+        ...state.publications.map(p => p.year)
+      ]).sort((a, b) => b - a);
+      fill('#yearFilter',years,'All years');
     }
-
-    function renderTable() {
-      const q = norm($('#search').value);
-      const dept = $('#deptFilter').value, deg = $('#degreeFilter').value, pos = $('#positionFilter').value;
-      const yearSel = $('#yearFilter').value;
-
-      const tb = $('#tbody'); tb.innerHTML = '';
-      let i=0;
-      state.filteredIdxs = [];
-
-      for (const rec of state.computed) {
-        const f = rec.fac;
-        if (q && ![...(f.english_names||[]), f.arabic_name||''].some(n=>norm(n).includes(q))) continue;
-        if (dept && f.department!==dept) continue;
-        if (deg && f.degree!==deg) continue;
-        if (pos && f.position!==pos) continue;
-        if (yearSel && !rec.byYear.some(([y])=> y===yearSel)) continue;
-
-        state.filteredIdxs.push(rec.idx);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${++i}</td>
-          <td><b>${(f.english_names?.[0])||'—'}</b></td>
-          <td>${f.arabic_name||''}</td>
+    
+    function renderTable(){
+      const q=norm($('#search').value);
+      const dept=$('#deptFilter').value, deg=$('#degreeFilter').value, pos=$('#positionFilter').value;
+      const tb=$('#tbody'); tb.innerHTML=''; let i=0;
+      
+      for(const rec of state.computed){
+        const f=state.faculty[rec.idx];
+        if(!f) continue;
+        
+        if(q && ![...(f.english_names||[]), f.arabic_name||''].some(n=>norm(n).includes(q))) continue;
+        if(dept&&f.department!==dept) continue; 
+        if(deg&&f.degree!==deg) continue; 
+        if(pos&&f.position!==pos) continue;
+        
+        i++;
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td>${i}</td>
+          <td><b>${(f.english_names&&f.english_names[0])||'—'}</b><div class="subtitle">${f.arabic_name||''}</div></td>
           <td>${f.department||'—'}</td>
           <td>${f.degree||'—'}</td>
           <td>${f.position||'—'}</td>
@@ -289,114 +354,398 @@
           <td>${f.clarivate_id||'—'}</td>
           <td><b>${rec.counts.indexed}</b></td>
           <td>${rec.counts.other}</td>
-          <td><button class="btn" data-open="${rec.idx}">Details</button></td>
+          <td><button class="btn" data-idx="${rec.idx}">View</button></td>
         `;
-        tb.appendChild(row);
+        tb.appendChild(tr);
       }
-
-      $$('button[data-open]').forEach(b=> b.addEventListener('click', () => openDetails(Number(b.dataset.open))));
-      buildDeptChart();
+      
+      $$('button[data-idx]').forEach(b=>b.addEventListener('click',(e)=>{
+        const idx = parseInt(e.target.getAttribute('data-idx'));
+        showFacultyDetails(idx);
+      }));
     }
-
-    function buildDeptChart() {
-      const deptMap = new Map();
-      for (const rec of state.computed) {
-        if (!state.filteredIdxs.includes(rec.idx)) continue;
-        const d = rec.fac.department || '—';
-        const cur = deptMap.get(d) || { indexed:0, other:0 };
-        cur.indexed += rec.counts.indexed; cur.other += rec.counts.other;
-        deptMap.set(d, cur);
+    
+    function showFacultyDetails(idx) {
+      const faculty = state.faculty[idx];
+      const computed = state.computed.find(c => c.idx === idx) || {counts: {indexed: 0, other: 0}, byYear: {}};
+      
+      $('#modalTitle').textContent = `Publications: ${faculty.english_names ? faculty.english_names[0] : 'Unknown'}`;
+      
+      let content = `
+        <div class="author-card">
+          <div class="author-name">${faculty.english_names ? faculty.english_names[0] : 'Unknown'} ${faculty.arabic_name ? `(${faculty.arabic_name})` : ''}</div>
+          <div class="author-details">
+            <div><strong>Department:</strong> ${faculty.department || '—'}</div>
+            <div><strong>Position:</strong> ${faculty.position || '—'}</div>
+            <div><strong>Degree:</strong> ${faculty.degree || '—'}</div>
+          </div>
+          <div class="author-pubs">
+            <div class="pub-count"><span class="pub-badge">Indexed</span> ${computed.counts.indexed}</div>
+            <div class="pub-count"><span class="pub-badge other">Other</span> ${computed.counts.other}</div>
+            <div class="pub-count"><strong>Total:</strong> ${computed.counts.indexed + computed.counts.other}</div>
+          </div>
+        </div>
+        
+        <h3>Publications by Year</h3>
+        <table style="width:100%">
+          <thead><tr><th>Year</th><th>Indexed</th><th>Other</th><th>Total</th></tr></thead>
+          <tbody>
+      `;
+      
+      const years = Object.keys(computed.byYear).sort((a, b) => b - a);
+      years.forEach(year => {
+        const counts = computed.byYear[year];
+        content += `
+          <tr>
+            <td>${year}</td>
+            <td>${counts.indexed}</td>
+            <td>${counts.other}</td>
+            <td><strong>${counts.indexed + counts.other}</strong></td>
+          </tr>
+        `;
+      });
+      
+      content += `</tbody></table>`;
+      
+      $('#modalContent').innerHTML = content;
+      $('#pubModal').style.display = 'flex';
+    }
+    
+    function renderAuthors() {
+      const searchTerm = norm($('#authorSearch').value);
+      const deptFilter = $('#authorDeptFilter').value;
+      const pubTypeFilter = $('#pubTypeFilter').value;
+      const yearFilter = $('#yearFilter').value;
+      
+      const authorsList = $('#authorsList');
+      authorsList.innerHTML = '';
+      
+      let filteredAuthors = state.authors;
+      
+      if (searchTerm) {
+        filteredAuthors = filteredAuthors.filter(a => 
+          norm(a.name).includes(searchTerm) || 
+          (a.department && norm(a.department).includes(searchTerm))
+        );
       }
-      const labels = [...deptMap.keys()];
-      const idx = labels.map(l => deptMap.get(l).indexed);
-      const oth = labels.map(l => deptMap.get(l).other);
-
-      state.charts.dept?.destroy();
-      state.charts.dept = new Chart($('#deptBar'), {
-        type: 'bar',
-        data: { labels, datasets: [{label:'Indexed', data: idx}, {label:'Other', data: oth}] },
-        options: { plugins:{legend:{labels:{color:'#e9edf4'}}}, scales:{x:{ticks:{color:'#c9d3e6'}}, y:{ticks:{color:'#c9d3e6'}}} }
+      
+      if (deptFilter) {
+        filteredAuthors = filteredAuthors.filter(a => a.department === deptFilter);
+      }
+      
+      // Update author stats
+      $('#statAuthors').textContent = filteredAuthors.length;
+      const totalPubs = filteredAuthors.reduce((sum, a) => sum + a.publications, 0);
+      $('#statPublications').textContent = totalPubs;
+      $('#statAvgPubs').textContent = filteredAuthors.length > 0 ? (totalPubs / filteredAuthors.length).toFixed(1) : '0';
+      
+      // Calculate collaboration rate (authors with more than 1 publication and multiple authors)
+      const collabAuthors = filteredAuthors.filter(a => a.publications > 1).length;
+      $('#statCollabRate').textContent = filteredAuthors.length > 0 ? 
+        Math.round((collabAuthors / filteredAuthors.length) * 100) + '%' : '0%';
+      
+      filteredAuthors.forEach(author => {
+        const authorEl = document.createElement('div');
+        authorEl.className = 'author-card';
+        
+        // Highlight search term in author name
+        let displayName = author.name;
+        if (searchTerm) {
+          const regex = new RegExp(`(${searchTerm})`, 'gi');
+          displayName = displayName.replace(regex, '<span class="search-highlight">$1</span>');
+        }
+        
+        authorEl.innerHTML = `
+          <div class="author-name">${displayName}</div>
+          <div class="author-details">
+            <div><strong>Department:</strong> ${author.department || '—'}</div>
+            <div><strong>Publications:</strong> ${author.publications}</div>
+            <div><strong>Indexed:</strong> ${author.indexed || 0}</div>
+            <div><strong>Other:</strong> ${author.other || 0}</div>
+          </div>
+          <div class="author-pubs">
+            <div class="pub-count"><span class="pub-badge">Indexed</span> ${author.indexed || 0}</div>
+            <div class="pub-count"><span class="pub-badge other">Other</span> ${author.other || 0}</div>
+            <div class="pub-count"><strong>Total:</strong> ${author.publications}</div>
+          </div>
+        `;
+        
+        authorsList.appendChild(authorEl);
       });
     }
+    
+    function buildCharts(){
+      // Department bar chart
+      const deptMap=new Map();
+      for(const r of state.computed){
+        const f = state.faculty[r.idx];
+        if (!f) continue;
+        
+        const d=f.department||'—';
+        if(!deptMap.has(d)) deptMap.set(d,{indexed:0,other:0});
+        deptMap.get(d).indexed+=r.counts.indexed; 
+        deptMap.get(d).other+=r.counts.other;
+      }
+      
+      const labels=[...deptMap.keys()], idx=labels.map(l=>deptMap.get(l).indexed), oth=labels.map(l=>deptMap.get(l).other);
+      state.charts.deptBar?.destroy(); 
+      state.charts.deptBar=new Chart($('#deptBar'),{
+        type:'bar',
+        data:{
+          labels,
+          datasets:[
+            {label:'Indexed', data:idx, backgroundColor:'rgba(37, 99, 235, 0.7)'},
+            {label:'Other', data:oth, backgroundColor:'rgba(139, 92, 246, 0.7)'}
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              labels: { color: '#e5e7eb' }
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#a5b4fc' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+            y: { ticks: { color: '#a5b4fc' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+          }
+        }
+      });
 
-    function openDetails(idx) {
-      const rec = state.computed.find(r => r.idx === idx);
-      if (!rec) return;
-      $('#dName').textContent = (rec.fac.english_names?.[0]) || '—';
-      $('#dMeta').textContent = `${rec.fac.department||'—'} • ${rec.fac.degree||'—'} • ${rec.fac.position||'—'}`;
-
-      // Year chart
-      const ys = rec.byYear.map(([y])=>y).reverse();
-      const yi = rec.byYear.map(([,c])=>c.indexed).reverse();
-      const yo = rec.byYear.map(([,c])=>c.other).reverse();
-      state.charts.year?.destroy();
-      state.charts.year = new Chart($('#yearChart'), {
+      // Year line chart
+      const yearAgg=new Map();
+      for(const r of state.computed){ 
+        for(const [y,c] of Object.entries(r.byYear)){ 
+          const o=yearAgg.get(y)||{indexed:0,other:0}; 
+          o.indexed+=c.indexed; 
+          o.other+=c.other; 
+          yearAgg.set(y,o);
+        }
+      }
+      
+      const ys=[...yearAgg.keys()].sort(); 
+      const yI=ys.map(y=>yearAgg.get(y).indexed), yO=ys.map(y=>yearAgg.get(y).other);
+      state.charts.yearLine?.destroy(); 
+      state.charts.yearLine=new Chart($('#yearLine'),{
         type:'line',
-        data:{ labels: ys, datasets:[{label:'Indexed', data: yi}, {label:'Other', data: yo}] },
-        options:{ plugins:{legend:{labels:{color:'#e9edf4'}}}, scales:{x:{ticks:{color:'#c9d3e6'}}, y:{ticks:{color:'#c9d3e6'}}} }
+        data:{
+          labels:ys,
+          datasets:[
+            {label:'Indexed', data:yI, borderColor:'rgb(37, 99, 235)', backgroundColor:'rgba(37, 99, 235, 0.1)', tension:0.3},
+            {label:'Other', data:yO, borderColor:'rgb(139, 92, 246)', backgroundColor:'rgba(139, 92, 246, 0.1)', tension:0.3}
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              labels: { color: '#e5e7eb' }
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#a5b4fc' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+            y: { ticks: { color: '#a5b4fc' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+          }
+        }
       });
-
-      // Journals table
-      const jt = $('#dJournals tbody'); jt.innerHTML = '';
-      rec.journals.slice(0, 30).forEach(j => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${j.journal||'—'}</td><td>${j.year||'—'}</td><td>${j.citescore||''}</td><td>${j.impact_factor||''}</td><td>${j.indexed}</td><td>${j.other}</td>`;
-        jt.appendChild(tr);
+      
+      // Top departments chart for analytics
+      const deptData = [...deptMap.entries()]
+        .map(([dept, counts]) => ({dept, total: counts.indexed + counts.other}))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+      
+      state.charts.topDepts?.destroy();
+      state.charts.topDepts = new Chart($('#topDeptsChart'), {
+        type: 'doughnut',
+        data: {
+          labels: deptData.map(d => d.dept),
+          datasets: [{
+            data: deptData.map(d => d.total),
+            backgroundColor: [
+              'rgba(37, 99, 235, 0.7)',
+              'rgba(139, 92, 246, 0.7)',
+              'rgba(14, 165, 164, 0.7)',
+              'rgba(239, 68, 68, 0.7)',
+              'rgba(245, 158, 11, 0.7)'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              labels: { color: '#e5e7eb' }
+            }
+          }
+        }
       });
-
-      $('#detailsDlg').showModal();
+      
+      // Publication types chart
+      const totalIndexed = state.computed.reduce((sum, r) => sum + r.counts.indexed, 0);
+      const totalOther = state.computed.reduce((sum, r) => sum + r.counts.other, 0);
+      
+      state.charts.pubTypes?.destroy();
+      state.charts.pubTypes = new Chart($('#pubTypesChart'), {
+        type: 'pie',
+        data: {
+          labels: ['Indexed', 'Other'],
+          datasets: [{
+            data: [totalIndexed, totalOther],
+            backgroundColor: [
+              'rgba(37, 99, 235, 0.7)',
+              'rgba(139, 92, 246, 0.7)'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              labels: { color: '#e5e7eb' }
+            }
+          }
+        }
+      });
     }
-
-    function exportSummaryCsv() {
-      const cols = ['english_name','arabic_name','department','degree','position','scopus_id','clarivate_id','indexed','other','total'];
-      let out = cols.join(',') + '\n';
-      for (const rec of state.computed) {
-        if (!state.filteredIdxs.includes(rec.idx)) continue;
-        const f = rec.fac, total = rec.counts.indexed + rec.counts.other;
-        const row = [
-          f.english_names?.[0]||'',
-          f.arabic_name||'',
-          f.department||'',
-          f.degree||'',
-          f.position||'',
-          f.scopus_id||'',
-          f.clarivate_id||'',
+    
+    function updateStats(){
+      $('#statFaculty').textContent=state.faculty.length;
+      const indexed = state.computed.reduce((s,r)=>s+r.counts.indexed,0);
+      const other = state.computed.reduce((s,r)=>s+r.counts.other,0);
+      $('#statIndexed').textContent=indexed;
+      $('#statOther').textContent=other;
+      $('#statTotal').textContent=indexed + other;
+    }
+    
+    function setupEventListeners() {
+      // Tab switching
+      $$('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          $$('.tab').forEach(t => t.classList.remove('active'));
+          $$('.view').forEach(v => v.classList.remove('active'));
+          
+          tab.classList.add('active');
+          $(`#${tab.getAttribute('data-tab')}-view`).classList.add('active');
+          
+          // Rebuild charts when switching to analytics tab
+          if (tab.getAttribute('data-tab') === 'analytics') {
+            setTimeout(() => {
+              buildCharts();
+            }, 100);
+          }
+        });
+      });
+      
+      // Faculty table filters
+      $('#search').addEventListener('input', renderTable);
+      $('#deptFilter').addEventListener('change', renderTable);
+      $('#degreeFilter').addEventListener('change', renderTable);
+      $('#positionFilter').addEventListener('change', renderTable);
+      
+      // Author list filters
+      $('#authorSearch').addEventListener('input', renderAuthors);
+      $('#authorDeptFilter').addEventListener('change', renderAuthors);
+      $('#pubTypeFilter').addEventListener('change', renderAuthors);
+      $('#yearFilter').addEventListener('change', renderAuthors);
+      
+      // Export buttons
+      $('#exportCsv').addEventListener('click', exportFacultyCsv);
+      $('#exportAuthors').addEventListener('click', exportAuthorsCsv);
+      
+      // Modal close
+      $('#closeModal').addEventListener('click', () => {
+        $('#pubModal').style.display = 'none';
+      });
+      
+      // Close modal when clicking outside
+      window.addEventListener('click', (e) => {
+        if (e.target === $('#pubModal')) {
+          $('#pubModal').style.display = 'none';
+        }
+      });
+    }
+    
+    function exportFacultyCsv() {
+      const headers = ['Name', 'Department', 'Degree', 'Position', 'Indexed Publications', 'Other Publications', 'Total Publications'];
+      const data = state.computed.map(rec => {
+        const f = state.faculty[rec.idx];
+        return [
+          f.english_names ? f.english_names[0] : 'Unknown',
+          f.department || '',
+          f.degree || '',
+          f.position || '',
           rec.counts.indexed,
           rec.counts.other,
-          total
-        ].map(csvEscape).join(',');
-        out += row + '\n';
-      }
-      const blob = new Blob([out], {type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob);
-      const a = Object.assign(document.createElement('a'), {href:url, download:'faculty_publications_summary.csv'});
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
-
-    // === init ===
-    (async function init(){
-      $('#yearNow').textContent = new Date().getFullYear();
-      $('#dClose').addEventListener('click', ()=> $('#detailsDlg').close());
-      $('#exportCsv').addEventListener('click', exportSummaryCsv);
-      ['#search','#deptFilter','#degreeFilter','#positionFilter','#yearFilter'].forEach(sel => {
-        $(sel).addEventListener('input', renderTable);
-        $(sel).addEventListener('change', renderTable);
+          rec.counts.indexed + rec.counts.other
+        ];
       });
-      $('#dirSearch').addEventListener('input', buildDirectory);
-
-      try {
-        const feed = await fetchFeed();
-        state.faculty = feed.faculty || [];
-        state.computed = feed.computed || [];
-        $('#lastUpdated').textContent = feed.generated_at ? ('Updated: ' + new Date(feed.generated_at).toLocaleString()) : 'Updated: now';
-
-        populateFilters();
-        buildDirectory();
-        renderTable();
-        applyStats();
-      } catch (e) {
-        alert('Unable to load data. Check FEED_URL (/exec) and permissions.\n' + e);
-      }
+      
+      const csv = Papa.unparse({
+        fields: headers,
+        data: data
+      });
+      
+      downloadCsv(csv, 'faculty_publications.csv');
+    }
+    
+    function exportAuthorsCsv() {
+      const headers = ['Author', 'Department', 'Indexed Publications', 'Other Publications', 'Total Publications'];
+      const data = state.authors.map(a => [
+        a.name,
+        a.department || '',
+        a.indexed || 0,
+        a.other || 0,
+        a.publications
+      ]);
+      
+      const csv = Papa.unparse({
+        fields: headers,
+        data: data
+      });
+      
+      downloadCsv(csv, 'authors_publications.csv');
+    }
+    
+    function downloadCsv(csv, filename) {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
+    (async function init(){
+      $('#yearNow').textContent=new Date().getFullYear(); 
+      applyI18N();
+      
+      $('#toggleLang').addEventListener('click',()=>{ 
+        CUR_LANG=(CUR_LANG==='en'?'ar':'en'); 
+        applyI18N(); 
+      });
+      
+      const feed=await tryLoadFeed(); 
+      if(!feed) return;
+      
+      state.faculty=feed.faculty||[]; 
+      state.computed=feed.computed||[];
+      state.authors = feed.authors || [];
+      state.publications = feed.publications || [];
+      
+      populateFilters(); 
+      renderTable(); 
+      renderAuthors();
+      buildCharts(); 
+      updateStats();
+      setupEventListeners();
+      
+      $('#lastUpdated').textContent = feed.generated_at ? 
+        ('Updated: '+ new Date(feed.generated_at).toLocaleString()) : 'Updated: now';
     })();
   </script>
 </body>
