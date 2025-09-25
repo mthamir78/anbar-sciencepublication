@@ -4,37 +4,273 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>College of Science — Faculty Publications Dashboard</title>
-
-  <!-- Academic, low-glare, fade gradients -->
   <style>
     :root{
-      /* Oxford blue to midnight with parchment & brass accents */
-      --bg1:#0b1020; --bg2:#0a1430;             /* page gradient */
-      --panel:#0e152c;                           /* cards */
-      --ink:#e9edf4; --muted:#c8d2e8;           /* text */
-      --line:#1c2748;                           /* borders */
-      --accent:#17543a; --accent-2:#b99141;     /* evergreen & brass */
-      --pill:#121d3d;
-      --good:#146c43; --warn:#7c3a15;
-      --shadow: 0 14px 36px rgba(0,0,0,.35);
+      --bg1: #fdf6e3;         /* ivory */
+      --bg2: #f7f3ec;         /* pale parchment */
+      --panel: #fcfaf7;        /* warm white */
+      --ink: #22201f;          /* obsidian */
+      --muted: #6a7d8b;        /* muted ash blue for secondary */
+      --line: #bfa054;         /* muted gold */
+      --accent: #7b2632;       /* deep oxblood */
+      --accent-2: #bfa054;     /* muted gold */
+      --pill: #f2e9dc;         /* light parchment */
+      --good: #8a8d6a;         /* olive */
+      --warn: #7b2632;         /* oxblood */
+      --shadow: 0 14px 36px rgba(123,38,50,0.07);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; color:var(--ink);
-      font:14px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-      background:radial-gradient(1200px 600px at 20% -10%, #0c1738 0%, transparent 60%),
-                 radial-gradient(900px 500px at 110% 10%, #0c1b3f 0%, transparent 55%),
-                 linear-gradient(180deg,var(--bg1),var(--bg2));
+      font:15px/1.6 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background:
+        linear-gradient(180deg, var(--bg1), var(--bg2)) fixed;
     }
     header{
       position:sticky; top:0; z-index:20;
-      background:linear-gradient(180deg, rgba(10,17,36,.92), rgba(10,17,36,.75));
-      backdrop-filter: blur(8px);
-      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, #fcfaf7 97%, #f7f3ec 100%);
+      border-bottom:2px solid var(--line);
+      box-shadow:0 2px 8px rgba(191,160,84,.07);
     }
     .wrap{max-width:1350px;margin:0 auto;padding:14px 16px}
-    h1{margin:0 0 6px; font-size:22px; letter-spacing:.2px}
+    h1{margin:0 0 6px; font-size:27px; letter-spacing:.4px; color:var(--accent); font-family:Georgia,Times,serif;}
+    h3,h4{font-family:Georgia,Times,serif; color:var(--accent);}
+    .subtitle{color:var(--muted); font-size:14px}
+    main{max-width:1350px;margin:18px auto; padding:0 16px 100px}
+    .grid{display:grid; gap:16px}
+    .card{
+      background:var(--panel);
+      border:1.5px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      color:var(--ink);
+    }
+    .pad{padding:14px}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .pill{
+      padding:5px 10px; border-radius:999px;
+      background:var(--pill); border:1px solid var(--line);
+      color:var(--muted); font-size:12px;
+      font-weight:500;
+    }
+
+    /* Buttons */
+    .btn{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 14px; border-radius:12px;
+      border:2px solid var(--accent);
+      background:linear-gradient(180deg,#fcfaf7,#fdf6e3);
+      color:var(--accent);
+      font-weight:600;
+      font-family:'Segoe UI', 'Roboto', Arial, sans-serif;
+      cursor:pointer; transition:.2s transform,.2s filter
+    }
+    .btn:hover{transform:translateY(-1px); filter:brightness(1.10); box-shadow:0 2px 8px #bfa054;}
+    .btn.primary{
+      background:linear-gradient(180deg,var(--accent),#bfa054 95%);
+      border-color:var(--accent);
+      color:#fff;
+    }
+    .btn.ghost{
+      background:transparent;
+      border-color:var(--line);
+      color:var(--accent);
+    }
+
+    /* Tabs */
+    .tabs{
+      display:flex; gap:8px; padding:10px 14px; border-bottom:2px solid var(--line);
+      position:sticky; top:56px; z-index:15;
+      background:linear-gradient(90deg, #fcfaf7 80%, #f2e9dc 100%);
+    }
+    .tab{
+      border:none; background:transparent;
+      color:var(--muted); padding:8px 14px;
+      border-radius:10px; cursor:pointer;
+      font-weight:500;
+      font-family:Georgia,Times,serif;
+      transition:.15s background;
+    }
+    .tab.active{
+      background:linear-gradient(180deg,#f2e9dc 80%,#fcfaf7 100%);
+      color:var(--accent); border:2px solid var(--accent); font-weight:700;
+      box-shadow:0 2px 8px var(--shadow);
+    }
+    .view{display:none}
+    .view.active{display:block}
+
+    .filters{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; padding:12px 14px}
+    .filters input,.filters select{
+      width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line);
+      background:#fcfaf7; color:var(--ink)
+    }
+
+    table{width:100%; border-collapse:separate; border-spacing:0 8px; background:var(--panel);}
+    th,td{padding:10px 12px; text-align:left}
+    th{font-weight:600; color:var(--accent); border-bottom:2px solid var(--line); font-family:Georgia,Times,serif;}
+    tr{background:#f7f3ec; border:1px solid var(--line)}
+    tr td:first-child, tr th:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
+    tr td:last-child,  tr th:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+
+    /* Author cards */
+    .author-card{
+      background:var(--panel); border:1px solid var(--line);
+      border-radius:12px; padding:12px; margin-bottom:10px
+    }
+    .author-name{font-weight:700; letter-spacing:.2px; color:var(--accent); font-family:Georgia,Times,serif;}
+    .author-meta{color:var(--muted); font-size:13px}
+    .badge{
+      display:inline-block; padding:2px 6px; border-radius:6px; font-size:12px;
+      background:var(--good); border:1px solid var(--line); color:#fff
+    }
+    .badge.good{background:var(--good); border-color:#8a8d6a}
+    .badge.other{background:var(--warn); border-color:var(--warn)}
+
+    dialog.details{
+      max-width:980px; width:calc(100% - 24px); border:none;
+      border-radius:16px; background:var(--panel); color:var(--ink)
+    }
+    dialog::backdrop{background:#7b263299; backdrop-filter: blur(2px)}
+    .two{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+    @media (max-width:980px){.two{grid-template-columns:1fr}}
+
+    .rtl{direction:rtl}
+    footer{max-width:1350px;margin:18px auto;padding:0 16px}
+  </style>
+
+  <!-- libs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="wrap row" style="justify-content:space-between">
+      <div>
+        <h1 id="title">Faculty Publications Dashboard</h1>
+        <div class="subtitle" id="subtitle">Weekly-refreshed (Designed for College of Science Faculty and Staff). Client-side academic viewer.</div>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="toggleLang">العربية</button>
+        <span class="pill" id="lastUpdated">—</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tabs (connected via location.hash) -->
+  <nav class="tabs wrap">
+    <button class="tab" data-tab="faculty">Faculty Overview</button>
+    <button class="tab" data-tab="authors">Authors & Publications</button>
+    <button class="tab" data-tab="analytics">Analytics & Trends</button>
+  </nav>
+
+  <main class="wrap">
+    <!-- FACULTY -->
+    <section class="view card active" id="view-faculty">
+      <div class="filters">
+        <input type="text" id="qFaculty" placeholder="Search faculty (English/Arabic) …" />
+        <select id="deptFilter"><option value="">All departments</option></select>
+        <select id="degreeFilter"><option value="">All degrees</option></select>
+        <select id="positionFilter"><option value="">All positions</option></select>
+        <button class="btn primary" id="exportCsv">Export summary CSV</button>
+      </div>
+
+      <div class="pad">
+        <div class="row">
+          <span class="pill">Faculty: <b id="statFaculty">0</b></span>
+          <span class="pill">Indexed: <b id="statIndexed">0</b></span>
+          <span class="pill">Other: <b id="statOther">0</b></span>
+          <span class="pill">Total: <b id="statTotal">0</b></span>
+        </div>
+      </div>
+
+      <div class="pad two">
+        <div class="card pad">
+          <h3 style="margin:0 0 6px">Department summary</h3>
+          <canvas id="deptBar" height="130"></canvas>
+        </div>
+        <div class="card pad">
+          <h3 style="margin:0 0 6px">Publications per year</h3>
+          <canvas id="yearLine" height="130"></canvas>
+        </div>
+      </div>
+
+      <div class="pad">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th>#</th><th>Faculty</th><th>Arabic</th><th>Dept</th><th>Degree</th><th>Position</th>
+              <th>Scopus</th><th>Clarivate</th><th>Indexed</th><th>Other</th><th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- AUTHORS -->
+    <section class="view card" id="view-authors">
+      <div class="filters">
+        <input type="text" id="qAuthor" placeholder="Search authors…" />
+        <select id="deptAuthorFilter"><option value="">All departments</option></select>
+        <select id="yearFilter"><option value="">All years</option></select>
+        <button class="btn primary" id="exportAuthors">Export authors CSV</button>
+      </div>
+
+      <div class="pad" id="authorsList"></div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="view card" id="view-analytics">
+      <div class="pad two">
+        <div class="card pad">
+          <h3 style="margin:0 0 6px">Top publishing departments</h3>
+          <canvas id="topDeptsChart" height="140"></canvas>
+        </div>
+        <div class="card pad">
+          <h3 style="margin:0 0 6px">Publication types</h3>
+          <canvas id="pubTypesChart" height="140"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="card pad">© <span id="yearNow"></span> • Designed by <span style="color:var(--accent-2); font-weight:600">Dr. Thamer Y. Mutter</span></div>
+  </footer>
+
+  <!-- DETAILS -->
+  <dialog class="details" id="detailsDlg">
+    <div class="pad">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <h3 id="dName" style="margin:0 0 4px"></h3>
+          <div id="dMeta" class="subtitle"></div>
+        </div>
+        <button class="btn" id="dClose">Close</button>
+      </div>
+      <div style="height:10px"></div>
+      <div class="two">
+        <div class="card pad">
+          <h4 style="margin:0 0 8px">Publications per year</h4>
+          <canvas id="yearChart" height="130"></canvas>
+        </div>
+        <div class="card pad">
+          <h4 style="margin:0 0 8px">Top journals (with metrics)</h4>
+          <table style="width:100%">
+            <thead><tr><th>Journal</th><th>Year</th><th>CiteScore</th><th>Impact Factor</th><th>Indexed</th><th>Other</th></tr></thead>
+            <tbody id="dJournals"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    // ... (JS unchanged)
+  </script>
+</body>
+</html>    h1{margin:0 0 6px; font-size:22px; letter-spacing:.2px}
     .subtitle{color:var(--muted); font-size:13px}
     main{max-width:1350px;margin:18px auto; padding:0 16px 100px}
     .grid{display:grid; gap:16px}
