@@ -61,12 +61,12 @@
     table{width:100%; border-collapse:separate; border-spacing:0 8px; background:var(--panel)}
     th,td{padding:10px 12px; text-align:left}
     th{font-weight:600; color:var(--accent); border-bottom:2px solid var(--line); font-family:Georgia,Times,serif}
-    tr{background:#f7f3ec; border:1px solid var(--line)}
+    tr{background:#f7f3ec; border:1.5px solid var(--line)}
     tr td:first-child, tr th:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
     tr td:last-child,  tr th:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
 
     /* Author list */
-    .author-card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px}
+    .author-card{background:var(--panel); border:1.5px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px}
     .author-name{font-weight:700; letter-spacing:.2px; color:var(--accent); font-family:Georgia,Times,serif}
     .author-meta{color:var(--muted); font-size:13px}
     .badge{display:inline-block; padding:2px 6px; border-radius:6px; font-size:12px; background:var(--good); border:1px solid var(--line); color:#fff}
@@ -92,7 +92,6 @@
     <div class="wrap row" style="justify-content:space-between">
       <div>
         <h1 id="title">Faculty Publications Dashboard</h1>
-        <!-- Leave subtitle empty (you asked to remove that sentence) -->
         <div class="subtitle" id="subtitle"></div>
       </div>
       <div class="row">
@@ -133,11 +132,11 @@
       <div class="pad two">
         <div class="card pad">
           <h3 style="margin:0 0 6px">Department summary</h3>
-          <canvas id="deptBar" height="130"></canvas>
+          <canvas id="deptBar" height="130" aria-label="Publications by department"></canvas>
         </div>
         <div class="card pad">
           <h3 style="margin:0 0 6px">Publications per year</h3>
-          <canvas id="yearLine" height="130"></canvas>
+          <canvas id="yearLine" height="130" aria-label="Publications per year"></canvas>
         </div>
       </div>
 
@@ -171,11 +170,11 @@
       <div class="pad two">
         <div class="card pad">
           <h3 style="margin:0 0 6px">Top publishing departments</h3>
-          <canvas id="topDeptsChart" height="140"></canvas>
+          <canvas id="topDeptsChart" height="140" aria-label="Top departments"></canvas>
         </div>
         <div class="card pad">
           <h3 style="margin:0 0 6px">Publication types</h3>
-          <canvas id="pubTypesChart" height="140"></canvas>
+          <canvas id="pubTypesChart" height="140" aria-label="Indexed vs Other"></canvas>
         </div>
       </div>
     </section>
@@ -190,7 +189,7 @@
   </footer>
 
   <!-- DETAILS DIALOG -->
-  <dialog class="details" id="detailsDlg">
+  <dialog class="details" id="detailsDlg" aria-modal="true">
     <div class="pad">
       <div class="row" style="justify-content:space-between">
         <div>
@@ -227,7 +226,8 @@
     const norm = s => (s||'').toString().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
     const unique = a => Array.from(new Set(a.filter(Boolean)));
     const csvQ = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
-    const debounce = (fn, ms=200) => { let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; };
+    const debounce = (fn, ms=240) => { let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; };
+    const safeDestroy = c => { try{ c && c.destroy && c.destroy(); }catch(_){} };
 
     const state = { faculty:[], computed:[], charts:{}, filteredIdxs:[] };
 
@@ -276,7 +276,7 @@
       $('#lastUpdated').textContent = j.generated_at ? ('Updated: ' + new Date(j.generated_at).toLocaleString()) : 'Updated: now';
     }
 
-    /* ===== FILTERS ===== */
+    /* ===== FILTERS (populate) ===== */
     function populateFilters(){
       const depts = unique(state.faculty.map(f=>f.department)).sort();
       const degs  = unique(state.faculty.map(f=>f.degree)).sort();
@@ -293,7 +293,7 @@
       fill('#yearFilter',years,'All years');
     }
 
-    /* ===== TABLE (Faculty) ===== */
+    /* ===== FACULTY TABLE ===== */
     function renderFacultyTable(){
       const q = norm($('#qFaculty').value);
       const dept = $('#deptFilter').value, deg = $('#degreeFilter').value, pos = $('#positionFilter').value;
@@ -353,7 +353,7 @@
       const iData  = labels.map(l => deptMap.get(l).i);
       const oData  = labels.map(l => deptMap.get(l).o);
 
-      state.charts.dept?.destroy();
+      safeDestroy(state.charts.dept);
       state.charts.dept = new Chart($('#deptBar'), {
         type:'bar',
         data:{ labels, datasets:[{label:'Indexed', data:iData}, {label:'Other', data:oData}] },
@@ -373,7 +373,7 @@
       const yi = ys.map(y=>yearAgg.get(y).i);
       const yo = ys.map(y=>yearAgg.get(y).o);
 
-      state.charts.year?.destroy();
+      safeDestroy(state.charts.year);
       state.charts.year = new Chart($('#yearLine'), {
         type:'line',
         data:{ labels:ys, datasets:[{label:'Indexed', data:yi, tension:.3}, {label:'Other', data:yo, tension:.3}] },
@@ -382,7 +382,6 @@
     }
 
     function buildAnalyticsCharts(){
-      // Top departments
       const deptTotals = state.computed.reduce((m,r)=>{
         const f = r.fac || state.faculty[r.idx];
         const d = f?.department || '—';
@@ -391,23 +390,66 @@
       }, {});
       const top = Object.entries(deptTotals).sort((a,b)=>b[1]-a[1]).slice(0,6);
 
-      state.charts.top?.destroy();
+      safeDestroy(state.charts.top);
       state.charts.top = new Chart($('#topDeptsChart'), {
         type:'doughnut',
         data:{ labels: top.map(e=>e[0]), datasets:[{ data: top.map(e=>e[1]) }] },
         options:{ responsive:true, maintainAspectRatio:false }
       });
 
-      // Indexed vs Other
       const i = state.computed.reduce((s,r)=>s+r.counts.indexed,0);
       const o = state.computed.reduce((s,r)=>s+r.counts.other ,0);
 
-      state.charts.types?.destroy();
+      safeDestroy(state.charts.types);
       state.charts.types = new Chart($('#pubTypesChart'), {
         type:'pie',
         data:{ labels:['Indexed','Other'], datasets:[{ data:[i,o] }] },
         options:{ responsive:true, maintainAspectRatio:false }
       });
+    }
+
+    /* ===== AUTHORS VIEW ===== */
+    function renderAuthors(){
+      const q    = norm($('#qAuthor').value);
+      const dept = $('#deptAuthorFilter').value;
+      const year = $('#yearFilter').value; // optional
+
+      const host = $('#authorsList'); host.innerHTML = '';
+      const records = state.computed
+        .map(r => ({...r, fac: r.fac || state.faculty[r.idx]}))
+        .filter(r => !!r.fac);
+
+      for (const r of records){
+        const f = r.fac;
+
+        if (q && ![...(f.english_names||[]), f.arabic_name||''].some(n=>norm(n).includes(q))) continue;
+        if (dept && f.department !== dept) continue;
+        if (year){
+          const yHit = r.byYear.some(([y,c])=> String(y)===String(year) && (c.indexed||c.other));
+          if (!yHit) continue;
+        }
+
+        const el = document.createElement('div');
+        el.className = 'author-card';
+        const total = (r.counts?.indexed||0) + (r.counts?.other||0);
+        el.innerHTML = `
+          <div class="row" style="justify-content:space-between">
+            <div>
+              <div class="author-name">${f.english_names?.[0] || '—'}</div>
+              <div class="author-meta">${f.department||'—'} • ${f.degree||'—'} • ${f.position||'—'}</div>
+            </div>
+            <div class="row">
+              <span class="badge good" title="Indexed">${r.counts?.indexed||0}</span>
+              <span class="badge other" title="Other">${r.counts?.other||0}</span>
+              <span class="pill" title="Total">Total: <b>${total}</b></span>
+              <button class="btn" data-open="${r.idx}">Details</button>
+            </div>
+          </div>`;
+        host.appendChild(el);
+      }
+
+      // wire buttons
+      host.querySelectorAll('button[data-open]').forEach(b => b.addEventListener('click', () => openDetails(+b.dataset.open)));
     }
 
     /* ===== DETAILS DIALOG ===== */
@@ -419,23 +461,21 @@
       $('#dName').textContent = (f.english_names?.[0]) || '—';
       $('#dMeta').textContent = `${f.department||'—'} • ${f.degree||'—'} • ${f.position||'—'}`;
 
-      // year chart
       const ys = [...rec.byYear].reverse().map(([y])=>y);
       const yi = [...rec.byYear].reverse().map(([,c])=>c.indexed);
       const yo = [...rec.byYear].reverse().map(([,c])=>c.other);
 
-      state.charts.detailYear?.destroy();
+      safeDestroy(state.charts.detailYear);
       state.charts.detailYear = new Chart($('#yearChart'), {
         type:'line',
         data:{ labels:ys, datasets:[{label:'Indexed', data:yi, tension:.3}, {label:'Other', data:yo, tension:.3}] },
         options:{ responsive:true, maintainAspectRatio:false }
       });
 
-      // journals table
       const tb = $('#dJournals'); tb.innerHTML = '';
-      rec.journals.slice(0,30).forEach(j=>{
+      (rec.journals||[]).slice(0,30).forEach(j=>{
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${j.journal||'—'}</td><td>${j.year||''}</td><td>${j.citescore||''}</td><td>${j.impact_factor||''}</td><td>${j.indexed}</td><td>${j.other}</td>`;
+        tr.innerHTML = `<td>${j.journal||'—'}</td><td>${j.year||''}</td><td>${j.citescore||''}</td><td>${j.impact_factor||''}</td><td>${j.indexed||0}</td><td>${j.other||0}</td>`;
         tb.appendChild(tr);
       });
 
@@ -458,9 +498,9 @@
           f.position||'',
           f.scopus_id||'',
           f.clarivate_id||'',
-          rec.counts.indexed,
-          rec.counts.other,
-          rec.counts.indexed + rec.counts.other
+          rec.counts.indexed||0,
+          rec.counts.other||0,
+          (rec.counts.indexed||0)+(rec.counts.other||0)
         ].map(csvQ).join(',');
         out += row + '\n';
       }
@@ -471,18 +511,20 @@
     const exportAuthorsCsv = exportFacultyCsv;
 
     /* ===== I18N ===== */
-    let CUR_LANG = 'en';
+    let CUR_LANG = localStorage.getItem('lang') || 'en';
     const I18N = {
       en:{title:'Faculty Publications Dashboard', sub:'', tabs:['Faculty Overview','Authors & Publications','Analytics & Trends'], langBtn:'العربية'},
       ar:{title:'لوحة منشورات التدريسيين', sub:'', tabs:['نظرة عامة','المؤلفون والمنشورات','التحليلات والاتجاهات'], langBtn:'English'}
     };
     function applyLang(){
-      const t = I18N[CUR_LANG];
+      const t = I18N[CUR_LANG] || I18N.en;
+      document.documentElement.lang = CUR_LANG === 'ar' ? 'ar' : 'en';
       $('#title').textContent = t.title;
       $('#subtitle').textContent = t.sub;
       $('#toggleLang').textContent = t.langBtn;
       document.body.classList.toggle('rtl', CUR_LANG==='ar');
       $$('.tab').forEach((el,i)=> el.textContent = t.tabs[i]);
+      localStorage.setItem('lang', CUR_LANG);
     }
     $('#toggleLang').addEventListener('click', () => { CUR_LANG = (CUR_LANG==='en' ? 'ar' : 'en'); applyLang(); });
 
@@ -495,17 +537,24 @@
 
       populateFilters();
       renderFacultyTable();
+      renderAuthors();
       applyLang();
 
       // events
-      $('#qFaculty').addEventListener('input', debounce(renderFacultyTable, 200));
+      $('#qFaculty').addEventListener('input', debounce(renderFacultyTable, 240));
       $('#deptFilter').addEventListener('change', renderFacultyTable);
       $('#degreeFilter').addEventListener('change', renderFacultyTable);
       $('#positionFilter').addEventListener('change', renderFacultyTable);
       $('#exportCsv').addEventListener('click', exportFacultyCsv);
       $('#exportAuthors').addEventListener('click', exportAuthorsCsv);
-      $$('.tab').forEach(b => b.addEventListener('click', () => goto(b.dataset.tab)));
 
+      // authors view events
+      $('#qAuthor').addEventListener('input', debounce(renderAuthors, 240));
+      $('#deptAuthorFilter').addEventListener('change', renderAuthors);
+      $('#yearFilter').addEventListener('change', renderAuthors);
+
+      // tabs/hashes
+      $$('.tab').forEach(b => b.addEventListener('click', () => goto(b.dataset.tab)));
       setActiveTabFromHash();
     })();
   </script>
