@@ -11,6 +11,7 @@
       --bg1:#fdf6e3; --bg2:#f7f3ec; --panel:#fcfaf7; --ink:#22201f;
       --muted:#465563; --line:#bfa054; --accent:#7b2632; --accent-2:#bfa054;
       --pill:#f2e9dc; --good:#2f7d32; --warn:#7b2632; --shadow:0 14px 36px rgba(123,38,50,.07);
+      --year-sep:#d7c28e;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -55,7 +56,6 @@
 
     /* Filters */
     .filters{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; padding:12px 14px}
-
     .filters input,.filters select{width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); background:#fcfaf7; color:var(--ink)}
     .filters .hint{font-size:12px; color:var(--muted)}
 
@@ -68,8 +68,11 @@
     tr td:first-child, tr th:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
     tr td:last-child,  tr th:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
     th.small, td.small{font-size:12px; padding:6px 8px}
+    /* visual separation for each-year groups */
+    .ysep{border-left:2px solid var(--year-sep)!important}
+    thead .year-label{border-left:2px solid var(--year-sep)}
 
-    /* Author list (kept) */
+    /* Author list */
     .author-card{background:var(--panel); border:1.5px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px}
     .author-name{font-weight:700; letter-spacing:.2px; color:var(--accent); font-family:Georgia,Times,serif}
     .author-meta{color:var(--muted); font-size:13px}
@@ -87,7 +90,6 @@
 
   <!-- libs -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 
 <body>
@@ -115,7 +117,7 @@
   <!-- ====== MAIN ====== -->
   <main class="wrap">
     <!-- SEARCH (Faculty table with per-year publisher columns) -->
-    <section class="view card active" id="view-faculty">
+    <section class="view card active" id="view-faculty" role="region" aria-label="Search">
       <div class="filters">
         <input type="text" id="qFaculty" placeholder="Search faculty (English/Arabic) …" autocomplete="off" />
         <select id="deptFilter"><option value="">All departments</option></select>
@@ -127,8 +129,8 @@
           <option value="10">Last 10 years</option>
           <option value="all">All years</option>
         </select>
-        <button class="btn primary" id="exportCsv">Export summary CSV</button>
-        <div class="hint">This table lists <b>all faculty</b> with counts per <b>year</b> and <b>publisher</b> (Scopus, Clarivate, Other).</div>
+        <button class="btn primary" id="exportCsv" type="button">Export summary CSV</button>
+        <div class="hint">This table lists <b>all faculty</b> with counts per <b>year</b> and <b>publisher</b> (S=Scopus, C=Clarivate, O=Other, T=Total).</div>
       </div>
 
       <div class="pad">
@@ -140,27 +142,38 @@
         </div>
       </div>
 
+      <div class="pad two">
+        <div class="card pad">
+          <h3 style="margin:0 0 6px">Department summary</h3>
+          <canvas id="deptBar" height="130" aria-label="Publications by department"></canvas>
+        </div>
+        <div class="card pad">
+          <h3 style="margin:0 0 6px">Publications per year</h3>
+          <canvas id="yearLine" height="130" aria-label="Publications per year"></canvas>
+        </div>
+      </div>
+
       <div class="pad scroll">
-        <table id="tbl">
+        <table id="tbl" aria-describedby="search table">
           <thead id="thead"></thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
     </section>
 
-    <!-- AUTHORS (Cards retained) -->
-    <section class="view card" id="view-authors">
+    <!-- AUTHORS -->
+    <section class="view card" id="view-authors" role="region" aria-label="Authors">
       <div class="filters">
         <input type="text" id="qAuthor" placeholder="Search authors…" autocomplete="off"/>
         <select id="deptAuthorFilter"><option value="">All departments</option></select>
         <select id="yearFilter"><option value="">All years</option></select>
-        <button class="btn primary" id="exportAuthors">Export authors CSV</button>
+        <button class="btn primary" id="exportAuthors" type="button">Export authors CSV</button>
       </div>
       <div class="pad" id="authorsList"></div>
     </section>
 
     <!-- ANALYTICS -->
-    <section class="view card" id="view-analytics">
+    <section class="view card" id="view-analytics" role="region" aria-label="Analytics">
       <div class="filters">
         <select id="yearForPct"><option value="">Select year for department %</option></select>
       </div>
@@ -193,7 +206,7 @@
           <h3 id="dName" style="margin:0 0 4px"></h3>
           <div id="dMeta" class="subtitle"></div>
         </div>
-        <button class="btn" id="dClose" aria-label="Close details">Close</button>
+        <button class="btn" id="dClose" type="button" aria-label="Close details">Close</button>
       </div>
       <div style="height:10px"></div>
       <div class="two">
@@ -228,7 +241,7 @@
 
     const state = { faculty:[], computed:[], charts:{}, filteredIdxs:[], allYears:[] };
 
-    /* ===== ROUTER ===== */
+    /* ===== HASH ROUTER ===== */
     function setActiveTabFromHash(){
       const h = location.hash.replace(/^#/, '') || 'faculty';
       const [key,val] = h.split('=');
@@ -250,9 +263,9 @@
       if (target === 'analytics') setTimeout(buildAnalytics, 60);
     }
     window.addEventListener('hashchange', setActiveTabFromHash);
-    const goto = tab => location.hash = '#'+tab;
+    const goto = tab => { location.hash = '#'+tab; };
 
-    /* ===== DATA ===== */
+    /* ===== DATA LOAD ===== */
     async function loadFeed(){
       const url = FEED_URL + '?cb=' + Date.now();
       let res;
@@ -266,29 +279,22 @@
 
       // build year universe
       const years1 = state.computed.flatMap(r => (r.byYear||[]).map(([y])=>y));
-      // allow explicit publisher breakdown if present
       const years2 = state.computed.flatMap(r => (r.byYearPub||[]).map(([y])=>y));
-      // journals fallback
       const years3 = state.computed.flatMap(r => (r.journals||[]).map(j=>j.year).filter(Boolean));
       state.allYears = unique([...years1, ...years2, ...years3]).sort();
     }
 
-    /* ===== PUBLISHER BREAKDOWN HELPERS =====
-       Returns Map(year => {scopus, clarivate, other})
-       Priority:
-       1) rec.byYearPub: [[year,{scopus,clarivate,other}], ...]
-       2) rec.journals: infer via fields (citescore=>Scopus, impact_factor=>Clarivate)
-       3) rec.byYear: split as scopus= indexed, clarivate=0, other=other
-    */
+    /* ===== PUBLISHER MAP ===== */
     function yearPublisherMap(rec){
       const m = new Map();
 
       if (Array.isArray(rec.byYearPub) && rec.byYearPub.length){
         for (const [y,obj] of rec.byYearPub){
-          const S = +obj.scopus    || 0;
-          const C = +obj.clarivate || 0;
-          const O = +obj.other     || 0;
-          m.set(String(y), {scopus:S, clarivate:C, other:O});
+          m.set(String(y), {
+            scopus:    +obj.scopus    || 0,
+            clarivate: +obj.clarivate || 0,
+            other:     +obj.other     || 0
+          });
         }
         return m;
       }
@@ -302,25 +308,16 @@
           const idx = +j.indexed || 0;
           const oth = +j.other   || 0;
 
-          // Heuristics:
-          // - citescore present -> Scopus
-          // - impact_factor present -> Clarivate
-          // - both present -> split evenly (round to Scopus then Clarivate)
-          // - neither -> treat as Scopus (most generous) unless a string flag exists
           const hasCS = j.citescore != null && j.citescore !== '';
           const hasIF = j.impact_factor != null && j.impact_factor !== '';
           const src   = (j.source||j.index_source||'').toString().toLowerCase();
 
-          if (src.includes('scopus'))        { cur.scopus    += idx; }
-          else if (src.includes('clarivate') || src.includes('wos') || src.includes('web of science')) { cur.clarivate += idx; }
-          else if (hasCS && !hasIF)          { cur.scopus    += idx; }
-          else if (!hasCS && hasIF)          { cur.clarivate += idx; }
-          else if (hasCS && hasIF){
-            const s = Math.round(idx/2);
-            cur.scopus += s; cur.clarivate += (idx - s);
-          }else{
-            cur.scopus += idx; // fallback: treat indexed as Scopus
-          }
+          if (src.includes('scopus'))        cur.scopus    += idx;
+          else if (src.includes('clarivate') || src.includes('wos') || src.includes('web of science')) cur.clarivate += idx;
+          else if (hasCS && !hasIF)          cur.scopus    += idx;
+          else if (!hasCS && hasIF)          cur.clarivate += idx;
+          else if (hasCS && hasIF){ const s = Math.round(idx/2); cur.scopus += s; cur.clarivate += (idx-s); }
+          else                       cur.scopus += idx; // fallback
 
           cur.other += oth;
           m.set(y, cur);
@@ -330,17 +327,13 @@
 
       if (Array.isArray(rec.byYear) && rec.byYear.length){
         for (const [y,c] of rec.byYear){
-          const S = +c.indexed || 0; // fallback -> Scopus bucket
-          const O = +c.other   || 0;
-          m.set(String(y), {scopus:S, clarivate:0, other:O});
+          m.set(String(y), {scopus:+(c.indexed||0), clarivate:0, other:+(c.other||0)});
         }
-        return m;
       }
-
       return m;
     }
 
-    /* ===== FILTERS (populate) ===== */
+    /* ===== FILTER POPULATION ===== */
     function populateFilters(){
       const depts = unique(state.faculty.map(f=>f.department)).sort();
       const degs  = unique(state.faculty.map(f=>f.degree)).sort();
@@ -348,7 +341,8 @@
       const years = state.allYears;
 
       const fill = (sel, arr, label) => {
-        $(sel).innerHTML = `<option value="">${label}</option>` + arr.map(v=>`<option>${v}</option>`).join('');
+        const el = $(sel);
+        el.innerHTML = `<option value="">${label}</option>` + arr.map(v=>`<option>${v}</option>`).join('');
       };
       fill('#deptFilter',depts,'All departments');
       fill('#degreeFilter',degs,'All degrees');
@@ -359,12 +353,24 @@
 
       // analytics year picker
       $('#yearForPct').innerHTML = `<option value="">Choose year…</option>` + years.map(y=>`<option>${y}</option>`).join('');
+
+      // default analytics year to the latest (if any)
+      const last = years.slice(-1)[0];
+      if (last) $('#yearForPct').value = String(last);
     }
 
-    /* ===== SEARCH TABLE (Faculty with per-year publisher cols) ===== */
+    /* ===== SEARCH TABLE (header) ===== */
+    function yearsToShow(){
+      const ys = state.allYears;
+      const span = $('#yearSpan').value || '5';
+      if (span === 'all') return ys;
+      const n = parseInt(span,10);
+      return ys.slice(-n);
+    }
+
     function buildSearchHeader(years){
       const thead = $('#thead');
-      // First row: static + year groups
+
       const staticCols = [
         '<th rowspan="2">#</th>',
         '<th rowspan="2">Faculty</th>',
@@ -376,12 +382,11 @@
         '<th rowspan="2">Clarivate ID</th>'
       ].join('');
 
-      const groupCols = years.map(y=>`<th class="small" colspan="4">${y}</th>`).join('');
+      const groupCols = years.map((y,idx)=>`<th class="small year-label ${idx===0?'ysep':''}" colspan="4">${y}</th>`).join('');
       const r1 = `<tr>${staticCols}${groupCols}</tr>`;
 
-      // Second row: S C O T under each year
-      const sub = years.map(()=>[
-        '<th class="small">S</th>',
+      const sub = years.map((_,i)=>[
+        `<th class="small ${'ysep'}">S</th>`,
         '<th class="small">C</th>',
         '<th class="small">O</th>',
         '<th class="small">T</th>'
@@ -391,14 +396,7 @@
       thead.innerHTML = r1 + r2;
     }
 
-    function yearsToShow(){
-      const ys = state.allYears;
-      const span = $('#yearSpan').value || '5';
-      if (span === 'all') return ys;
-      const n = parseInt(span,10);
-      return ys.slice(-n); // last N
-    }
-
+    /* ===== SEARCH TABLE (rows) ===== */
     function renderFacultyTable(){
       const q = norm($('#qFaculty').value);
       const dept = $('#deptFilter').value, deg = $('#degreeFilter').value, pos = $('#positionFilter').value;
@@ -420,10 +418,11 @@
         state.filteredIdxs.push(rec.idx);
 
         const yMap = yearPublisherMap(rec);
-        const cells = years.map(y=>{
+        const cells = years.map((y,idx)=>{
           const obj = yMap.get(String(y)) || {scopus:0,clarivate:0,other:0};
           const t = obj.scopus + obj.clarivate + obj.other;
-          return `<td class="small">${obj.scopus||0}</td><td class="small">${obj.clarivate||0}</td><td class="small">${obj.other||0}</td><td class="small"><b>${t}</b></td>`;
+          const cls = idx===0 ? 'small ysep' : 'small';
+          return `<td class="${cls}">${obj.scopus||0}</td><td class="small">${obj.clarivate||0}</td><td class="small">${obj.other||0}</td><td class="small"><b>${t}</b></td>`;
         }).join('');
 
         const tr = document.createElement('tr');
@@ -441,9 +440,10 @@
         tb.appendChild(tr);
       }
       updateKPIs();
-      buildFacultyCharts(); // keeps your existing dept/year visuals
+      buildFacultyCharts();
     }
 
+    /* ===== KPIs ===== */
     function updateKPIs(){
       const idx = state.computed.reduce((s,r)=>s + ((r.counts?.indexed)||0), 0);
       const oth = state.computed.reduce((s,r)=>s + ((r.counts?.other)||0)  , 0);
@@ -453,7 +453,7 @@
       $('#statTotal').textContent   = idx + oth;
     }
 
-    /* ===== EXISTING FACULTY CHARTS (kept) ===== */
+    /* ===== FACULTY CHARTS (overview) ===== */
     function buildFacultyCharts(){
       // Dept totals (indexed/other)
       const deptMap = new Map();
@@ -469,11 +469,14 @@
       const oData  = labels.map(l => deptMap.get(l).o);
 
       safeDestroy(state.charts.dept);
-      state.charts.dept = new Chart($('#deptBar'), {
-        type:'bar',
-        data:{ labels, datasets:[{label:'Indexed', data:iData}, {label:'Other', data:oData}] },
-        options:{ responsive:true, maintainAspectRatio:false }
-      });
+      const deptCtx = $('#deptBar');
+      if (deptCtx){
+        state.charts.dept = new Chart(deptCtx, {
+          type:'bar',
+          data:{ labels, datasets:[{label:'Indexed', data:iData}, {label:'Other', data:oData}] },
+          options:{ responsive:true, maintainAspectRatio:false }
+        });
+      }
 
       // Year aggregated (indexed/other)
       const yearAgg = new Map();
@@ -489,16 +492,19 @@
       const yo = ys.map(y=>yearAgg.get(y).o);
 
       safeDestroy(state.charts.year);
-      state.charts.year = new Chart($('#yearLine'), {
-        type:'line',
-        data:{ labels:ys, datasets:[{label:'Indexed', data:yi, tension:.3}, {label:'Other', data:yo, tension:.3}] },
-        options:{ responsive:true, maintainAspectRatio:false }
-      });
+      const yearCtx = $('#yearLine');
+      if (yearCtx){
+        state.charts.year = new Chart(yearCtx, {
+          type:'line',
+          data:{ labels:ys, datasets:[{label:'Indexed', data:yi, tension:.3}, {label:'Other', data:yo, tension:.3}] },
+          options:{ responsive:true, maintainAspectRatio:false }
+        });
+      }
     }
 
-    /* ===== ANALYTICS: Percentages by department per year (publisher mix) + college trend ===== */
+    /* ===== ANALYTICS ===== */
     function buildAnalytics(){
-      // build college publisher trend (counts per year, all depts)
+      // college trend
       const college = new Map(); // year => {S,C,O}
       for (const rec of state.computed){
         const m = yearPublisherMap(rec);
@@ -510,23 +516,30 @@
       }
       const years = [...college.keys()].sort();
       safeDestroy(state.charts.collegeTrend);
-      state.charts.collegeTrend = new Chart($('#collegePublisherTrend'), {
-        type:'line',
-        data:{ labels:years, datasets:[
-          {label:'Scopus',    data:years.map(y=>college.get(y).S), tension:.3},
-          {label:'Clarivate', data:years.map(y=>college.get(y).C), tension:.3},
-          {label:'Other',     data:years.map(y=>college.get(y).O), tension:.3},
-        ]},
-        options:{ responsive:true, maintainAspectRatio:false }
-      });
+      const ct = $('#collegePublisherTrend');
+      if (ct){
+        state.charts.collegeTrend = new Chart(ct, {
+          type:'line',
+          data:{ labels:years, datasets:[
+            {label:'Scopus',    data:years.map(y=>college.get(y).S), tension:.3},
+            {label:'Clarivate', data:years.map(y=>college.get(y).C), tension:.3},
+            {label:'Other',     data:years.map(y=>college.get(y).O), tension:.3},
+          ]},
+          options:{ responsive:true, maintainAspectRatio:false }
+        });
+      }
 
-      // department % for selected year
-      renderDeptPctForYear($('#yearForPct').value);
+      // department % for selected year (default to last if empty)
+      const sel = $('#yearForPct');
+      const chosen = sel && sel.value ? sel.value : years.slice(-1)[0];
+      if (sel && !sel.value && chosen) sel.value = chosen;
+      renderDeptPctForYear(chosen);
     }
 
     function renderDeptPctForYear(year){
+      if (!year) { safeDestroy(state.charts.deptPct); return; }
       const ySel = String(year||'');
-      const deptMix = new Map(); // dept => {S,C,O,total}
+      const deptMix = new Map(); // dept => {S,C,O,T}
       for (const rec of state.computed){
         const f = rec.fac || state.faculty[rec.idx]; if (!f) continue;
         const d = f.department || '—';
@@ -543,24 +556,26 @@
       const O = depts.map(d=>pct(deptMix.get(d).O, deptMix.get(d).T));
 
       safeDestroy(state.charts.deptPct);
-      state.charts.deptPct = new Chart($('#deptPublisherPct'), {
-        type:'bar',
-        data:{ labels:depts, datasets:[
-          {label:'Scopus %',    data:S, stack:'pct'},
-          {label:'Clarivate %', data:C, stack:'pct'},
-          {label:'Other %',     data:O, stack:'pct'},
-        ]},
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          scales:{ y:{ min:0, max:100, ticks:{callback:v=>v+'%'} } },
-          plugins:{ tooltip:{ callbacks:{ label:ctx => `${ctx.dataset.label}: ${ctx.formattedValue}%` } } }
-        }
-      });
-
+      const dp = $('#deptPublisherPct');
+      if (dp){
+        state.charts.deptPct = new Chart(dp, {
+          type:'bar',
+          data:{ labels:depts, datasets:[
+            {label:'Scopus %',    data:S, stack:'pct'},
+            {label:'Clarivate %', data:C, stack:'pct'},
+            {label:'Other %',     data:O, stack:'pct'},
+          ]},
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            scales:{ y:{ min:0, max:100, ticks:{callback:v=>v+'%'} } },
+            plugins:{ tooltip:{ callbacks:{ label:ctx => `${ctx.dataset.label}: ${ctx.formattedValue}%` } } }
+          }
+        });
+      }
       function pct(n,t){ return t? Math.round((n/t)*100) : 0; }
     }
 
-    /* ===== AUTHORS VIEW (cards) ===== */
+    /* ===== AUTHORS VIEW ===== */
     function renderAuthors(){
       const q    = norm($('#qAuthor').value);
       const dept = $('#deptAuthorFilter').value;
@@ -600,8 +615,8 @@
               <span class="badge" title="Scopus">${v.scopus||0}</span>
               <span class="badge" title="Clarivate">${v.clarivate||0}</span>
               <span class="badge other" title="Other">${v.other||0}</span>
-              <span class="pill" title="Most recent year total">${mostRecent}: <b>${total}</b></span>
-              <button class="btn" data-open="${r.idx}">Details</button>
+              <span class="pill" title="Most recent year total">${mostRecent ?? '—'}: <b>${total}</b></span>
+              <button class="btn" data-open="${r.idx}" type="button">Details</button>
             </div>
           </div>`;
         host.appendChild(el);
@@ -619,7 +634,6 @@
       $('#dName').textContent = (f.english_names?.[0]) || '—';
       $('#dMeta').textContent = `${f.department||'—'} • ${f.degree||'—'} • ${f.position||'—'}`;
 
-      // year chart (publisher split)
       const m = yearPublisherMap(rec);
       const ys = state.allYears;
       const S = ys.map(y=> (m.get(String(y))||{scopus:0}).scopus );
@@ -627,17 +641,19 @@
       const O = ys.map(y=> (m.get(String(y))||{other:0}).other );
 
       safeDestroy(state.charts.detailYear);
-      state.charts.detailYear = new Chart($('#yearChart'), {
-        type:'line',
-        data:{ labels:ys, datasets:[
-          {label:'Scopus',    data:S, tension:.3},
-          {label:'Clarivate', data:C, tension:.3},
-          {label:'Other',     data:O, tension:.3}
-        ]},
-        options:{ responsive:true, maintainAspectRatio:false }
-      });
+      const yc = $('#yearChart');
+      if (yc){
+        state.charts.detailYear = new Chart(yc, {
+          type:'line',
+          data:{ labels:ys, datasets:[
+            {label:'Scopus',    data:S, tension:.3},
+            {label:'Clarivate', data:C, tension:.3},
+            {label:'Other',     data:O, tension:.3}
+          ]},
+          options:{ responsive:true, maintainAspectRatio:false }
+        });
+      }
 
-      // journals table (as-is)
       const tb = $('#dJournals'); tb.innerHTML = '';
       (rec.journals||[]).slice(0,30).forEach(j=>{
         const tr = document.createElement('tr');
@@ -652,7 +668,6 @@
 
     /* ===== EXPORTS ===== */
     function exportFacultyCsv(){
-      // Export wide table for current year-span (per year per publisher)
       const years = yearsToShow();
       const headers = [
         'Name','Arabic','Department','Degree','Position','ScopusID','ClarivateID',
@@ -683,7 +698,7 @@
       const a = Object.assign(document.createElement('a'), {href:url, download:'faculty_by_year_publisher.csv'});
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
-    const exportAuthorsCsv = exportFacultyCsv;
+    const exportAuthorsCsv = exportFacultyCsv; // same data view
 
     /* ===== I18N ===== */
     let CUR_LANG = localStorage.getItem('lang') || 'en';
@@ -711,30 +726,31 @@
       catch(e){ console.error(e); alert('Could not load feed. Check FEED_URL.'); }
 
       populateFilters();
-      renderFacultyTable();        // search tab
-      renderAuthors();             // authors tab
+      renderFacultyTable();
+      renderAuthors();
       applyLang();
 
-      // events
+      // SEARCH events
       $('#qFaculty').addEventListener('input', debounce(renderFacultyTable, 240));
       $('#deptFilter').addEventListener('change', renderFacultyTable);
       $('#degreeFilter').addEventListener('change', renderFacultyTable);
       $('#positionFilter').addEventListener('change', renderFacultyTable);
       $('#yearSpan').addEventListener('change', renderFacultyTable);
       $('#exportCsv').addEventListener('click', exportFacultyCsv);
-      $('#exportAuthors').addEventListener('click', exportAuthorsCsv);
 
-      // authors view events
+      // AUTHORS events
       $('#qAuthor').addEventListener('input', debounce(renderAuthors, 240));
       $('#deptAuthorFilter').addEventListener('change', renderAuthors);
       $('#yearFilter').addEventListener('change', renderAuthors);
+      $('#exportAuthors').addEventListener('click', exportAuthorsCsv);
 
-      // analytics
+      // ANALYTICS events
       $('#yearForPct').addEventListener('change', (e)=> renderDeptPctForYear(e.target.value));
       buildAnalytics();
 
-      // tabs/hashes
+      // Tabs click => hash (ensures proper activation)
       $$('.tab').forEach(b => b.addEventListener('click', () => goto(b.dataset.tab)));
+      // Start on hash (connect pages)
       setActiveTabFromHash();
     })();
   </script>
